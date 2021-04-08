@@ -1,4 +1,4 @@
-// Copyright 2000-2020 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
+// Copyright 2000-2021 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package com.jetbrains.lang.dart.ide.runner.server.vmService;
 
 import com.google.common.base.Charsets;
@@ -49,9 +49,8 @@ import com.jetbrains.lang.dart.ide.runner.server.webdev.DartDaemonParserUtil;
 import com.jetbrains.lang.dart.util.DartBazelFileUtil;
 import com.jetbrains.lang.dart.util.DartResolveUtil;
 import com.jetbrains.lang.dart.util.DartUrlResolver;
-import gnu.trove.THashMap;
-import gnu.trove.THashSet;
-import gnu.trove.TIntObjectHashMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import org.dartlang.vm.service.VmService;
 import org.dartlang.vm.service.element.*;
 import org.dartlang.vm.service.logging.Logging;
@@ -62,7 +61,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
-public class DartVmServiceDebugProcess extends XDebugProcess {
+public final class DartVmServiceDebugProcess extends XDebugProcess {
   private static final Logger LOG = Logger.getInstance(DartVmServiceDebugProcess.class.getName());
 
   private static final String ORG_DARTLANG_APP_PREFIX = "org-dartlang-app://";
@@ -76,18 +75,17 @@ public class DartVmServiceDebugProcess extends XDebugProcess {
   private final IsolatesInfo myIsolatesInfo;
   private VmServiceWrapper myVmServiceWrapper;
 
-  private final @NotNull Set<String> mySuspendedIsolateIds = Collections.synchronizedSet(new THashSet<>());
+  private final @NotNull Set<String> mySuspendedIsolateIds = Collections.synchronizedSet(new HashSet<>());
   private String myLatestCurrentIsolateId;
 
-  private final Map<String, LightVirtualFile> myScriptIdToContentMap = new THashMap<>();
-  private final Map<String, TIntObjectHashMap<Pair<Integer, Integer>>> myScriptIdToLinesAndColumnsMap =
-    new THashMap<>();
+  private final Map<String, LightVirtualFile> myScriptIdToContentMap = new HashMap<>();
+  private final Map<String, Int2ObjectMap<Pair<Integer, Integer>>> myScriptIdToLinesAndColumnsMap = new HashMap<>();
 
   private final @Nullable String myDASExecutionContextId;
   private final @NotNull DebugType myDebugType;
   private final int myTimeout;
   private final @Nullable VirtualFile myCurrentWorkingDirectory;
-  protected @Nullable String myRemoteProjectRootUri;
+  @Nullable String myRemoteProjectRootUri;
   private @Nullable String myBazelWorkspacePath;
 
   private final @NotNull OpenDartObservatoryUrlAction myOpenObservatoryAction =
@@ -95,22 +93,6 @@ public class DartVmServiceDebugProcess extends XDebugProcess {
 
   public enum DebugType {
     CLI, REMOTE, WEBDEV
-  }
-
-  /**
-   * @deprecated use another constructor
-   */
-  @Deprecated
-  public DartVmServiceDebugProcess(@NotNull XDebugSession session,
-                                   @NotNull String debuggingHost,
-                                   int observatoryPort,
-                                   @Nullable ExecutionResult executionResult,
-                                   @NotNull DartUrlResolver dartUrlResolver,
-                                   @Nullable String dasExecutionContextId,
-                                   @NotNull DebugType debugType,
-                                   int timeout,
-                                   @Nullable VirtualFile currentWorkingDirectory) {
-    this(session, executionResult, dartUrlResolver, dasExecutionContextId, debugType, timeout, currentWorkingDirectory);
   }
 
   public DartVmServiceDebugProcess(@NotNull XDebugSession session,
@@ -313,7 +295,7 @@ public class DartVmServiceDebugProcess extends XDebugProcess {
     });
   }
 
-  protected void scheduleConnect(@NotNull String url) {
+  void scheduleConnect(@NotNull String url) {
     ApplicationManager.getApplication().executeOnPooledThread(() -> {
       long startTime = System.currentTimeMillis();
 
@@ -335,10 +317,10 @@ public class DartVmServiceDebugProcess extends XDebugProcess {
         }
       }
       catch (IOException e) {
-        StringBuilder message = new StringBuilder("Failed to connect to the VM observatory service: " + e.toString() + "\n");
+        StringBuilder message = new StringBuilder("Failed to connect to the VM observatory service: " + e + "\n");
         Throwable cause = e.getCause();
         while (cause != null) {
-          message.append("Caused by: ").append(cause.toString()).append("\n");
+          message.append("Caused by: ").append(cause).append("\n");
           final Throwable cause1 = cause.getCause();
           if (cause1 != cause) {
             cause = cause1;
@@ -660,7 +642,7 @@ public class DartVmServiceDebugProcess extends XDebugProcess {
       file = myScriptIdToContentMap.get(scriptRef.getId());
     }
 
-    TIntObjectHashMap<Pair<Integer, Integer>> tokenPosToLineAndColumn = myScriptIdToLinesAndColumnsMap.get(scriptRef.getId());
+    Int2ObjectMap<Pair<Integer, Integer>> tokenPosToLineAndColumn = myScriptIdToLinesAndColumnsMap.get(scriptRef.getId());
 
     if (file != null && tokenPosToLineAndColumn != null) {
       final Pair<Integer, Integer> lineAndColumn = tokenPosToLineAndColumn.get(tokenPos);
@@ -699,10 +681,10 @@ public class DartVmServiceDebugProcess extends XDebugProcess {
     return uri.startsWith("dart:_") || uri.startsWith("dart:") && uri.contains("-patch/");
   }
 
-  private static @NotNull TIntObjectHashMap<Pair<Integer, Integer>> createTokenPosToLineAndColumnMap(@NotNull List<List<Integer>> tokenPosTable) {
+  private static Int2ObjectMap<Pair<Integer, Integer>> createTokenPosToLineAndColumnMap(@NotNull List<List<Integer>> tokenPosTable) {
     // Each subarray consists of a line number followed by (tokenPos, columnNumber) pairs
     // see https://github.com/dart-lang/vm_service_drivers/blob/master/dart/tool/service.md#script
-    final TIntObjectHashMap<Pair<Integer, Integer>> result = new TIntObjectHashMap<>();
+    final Int2ObjectMap<Pair<Integer, Integer>> result = new Int2ObjectOpenHashMap<>();
 
     for (List<Integer> lineAndPairs : tokenPosTable) {
       final Iterator<Integer> iterator = lineAndPairs.iterator();

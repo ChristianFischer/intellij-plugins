@@ -47,6 +47,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.intellij.testFramework.assertions.Assertions.assertThat;
 
@@ -80,11 +81,11 @@ public class FlashUmlTest extends JavaCodeInsightTestCase {
 
   @Override
   public Object getData(@NotNull String dataId) {
-    if (dataId.equals(CommonDataKeys.PSI_ELEMENT.getName()) ||
+    if (CommonDataKeys.PSI_ELEMENT.is(dataId) ||
         dataId.equals(AnActionEvent.injectedId(CommonDataKeys.PSI_ELEMENT.getName()))) {
       return TargetElementUtil.findTargetElement(getEditor(), TargetElementUtil.getInstance().getReferenceSearchFlags());
     }
-    if (dataId.equals(CommonDataKeys.PSI_FILE.getName())) {
+    if (CommonDataKeys.PSI_FILE.is(dataId)) {
       return getFile();
     }
     return super.getData(dataId);
@@ -132,7 +133,7 @@ public class FlashUmlTest extends JavaCodeInsightTestCase {
 
       DataContext dataContext = DataManager.getInstance().getDataContext(null);
       AnActionEvent event = AnActionEvent.createFromDataContext(ActionPlaces.UNKNOWN, null, dataContext);
-      List<DiagramProvider> providers = ShowDiagramBase.findProviders(event).toList();
+      List<DiagramProvider<?>> providers = ShowDiagramBase.findProviders(event).collect(Collectors.toList());
 
       FlashUmlProvider provider = ContainerUtil.findInstance(providers, FlashUmlProvider.class);
       assertNotNull("Flash UML provider not found", provider);
@@ -144,7 +145,7 @@ public class FlashUmlTest extends JavaCodeInsightTestCase {
       builder = UmlGraphBuilderFactory.create(myProject, provider, actualOrigin, null);
       Disposer.register(getTestRootDisposable(), builder);
       DiagramDataModel<?> model = builder.getDataModel();
-      DiagramConfiguration configuration = DiagramConfiguration.getConfiguration();
+      DiagramConfiguration configuration = DiagramConfiguration.getInstance();
       String originalCategories = configuration.categories.get(provider.getID());
       if (dependencies != null) {
         model.setShowDependencies(true);

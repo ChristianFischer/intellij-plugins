@@ -44,6 +44,7 @@ import java.io.FileInputStream;
 import java.util.*;
 import java.util.jar.Attributes;
 import java.util.jar.JarFile;
+import java.util.jar.Manifest;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -55,6 +56,8 @@ import static org.jetbrains.osgi.jps.OsgiJpsBundle.message;
  * @author <a href="mailto:janthomae@janthomae.de">Jan Thomä</a>
  */
 public class BndWrapper {
+  private static final Logger LOG = Logger.getInstance(BndWrapper.class);
+
   private final Reporter myReporter;
 
   public BndWrapper(Reporter reporter) {
@@ -64,8 +67,7 @@ public class BndWrapper {
   /**
    * Wraps .jar files using Bnd analyzer. Uses bundlification rules defined in Settings/OSGi/Library Bundling.
    */
-  @NotNull
-  public List<String> bundlifyLibraries(@NotNull Collection<File> dependencies,
+  public @NotNull List<String> bundlifyLibraries(@NotNull Collection<File> dependencies,
                                         @NotNull File outputDir,
                                         @NotNull List<LibraryBundlificationRule> rules) {
     List<String> result = new ArrayList<>(dependencies.size());
@@ -92,8 +94,7 @@ public class BndWrapper {
     return result;
   }
 
-  @Nullable
-  private File wrap(@NotNull File sourceFile, @NotNull File outputDir, @NotNull List<LibraryBundlificationRule> rules) throws OsgiBuildException {
+  private @Nullable File wrap(@NotNull File sourceFile, @NotNull File outputDir, @NotNull List<LibraryBundlificationRule> rules) throws OsgiBuildException {
     if (!sourceFile.isFile()) {
       throw new OsgiBuildException(message("bnd.wrapper.library.not.found", sourceFile));
     }
@@ -194,6 +195,45 @@ public class BndWrapper {
     }
   }
 
+  public void build(@Nullable File bndFile,
+                    @NotNull Map<String, String> properties,
+                    @NotNull Properties mavenProperties,
+                    File @NotNull [] classPath,
+                    File @NotNull [] srcPath,
+                    @Nullable File base,
+                    @NotNull File moduleOutputDir,
+                    @NotNull File outputFile) throws Exception {
+    try (Builder builder = new ReportingBuilder(myReporter, new Processor(mavenProperties, false))) {
+      if (LOG.isDebugEnabled()) {
+        builder.setTrace(true);
+        LOG.debug("OSGi bundle bnd file: " + bndFile + ", properties: " + properties + ", Maven properties: " + mavenProperties);
+      }
+
+      builder.setProperties(base, OrderedProperties.fromMap(properties));
+      builder.setPedantic(false);
+      builder.setClasspath(classPath);
+      builder.setSourcepath(srcPath);
+
+      if (bndFile != null) {
+        // implicitly calls setBase
+        builder.setProperties(bndFile);
+      }
+      else {
+        builder.setBase(base != null ? base : new File(""));
+      }
+
+      // pack everything of the output directory, just like in maven-jar-plugin
+      // includes/filtering/etc. needs to be done elsewhere
+      if (moduleOutputDir.isDirectory()) {
+        Jar classesDirJar = new Jar("classes", moduleOutputDir);
+        classesDirJar.setManifest(new Manifest());
+        builder.setJar(classesDirJar);
+      }
+
+      doBuild(builder, outputFile);
+    }
+  }
+
   /**
    * Builds the .jar file for the given module.
    */
@@ -261,6 +301,8 @@ public class BndWrapper {
     }
 
     try (Jar jar = builder.build()) {
+      // override last modified as Bnd would otherwise take the bnd-file modification date
+      jar.updateModified(System.currentTimeMillis(), "newly built");
       jar.setName(outputFile.getName());
       jar.write(outputFile);
     }
@@ -286,8 +328,7 @@ public class BndWrapper {
     }
   }
 
-  @NotNull
-  public static List<String> getBundleNames(@NotNull File bndFile) {
+  public static @NotNull List<String> getBundleNames(@NotNull File bndFile) {
     try (Builder builder = new Builder()) {
       builder.setProperties(bndFile);
       builder.setPedantic(false);

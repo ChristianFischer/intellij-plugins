@@ -2,13 +2,13 @@
 package org.jetbrains.ruby.ift.lesson.completion
 
 import org.jetbrains.ruby.ift.RubyLessonsBundle
-import training.learn.interfaces.Module
-import training.learn.lesson.kimpl.KLesson
-import training.learn.lesson.kimpl.LessonContext
-import training.learn.lesson.kimpl.parseLessonSample
+import training.dsl.LessonContext
+import training.dsl.LessonUtil.restoreIfModifiedOrMoved
+import training.dsl.parseLessonSample
+import training.learn.course.KLesson
 
-class RubyHippieCompletionLesson(module: Module)
-  : KLesson("Hippie Completion", RubyLessonsBundle.message("ruby.hippie.completion.lesson.name"), module, "ruby") {
+class RubyHippieCompletionLesson
+  : KLesson("Hippie Completion", RubyLessonsBundle.message("ruby.hippie.completion.lesson.name")) {
 
   private val sample = parseLessonSample("""class SomeExampleClass
   attr_reader :callbacks
@@ -29,16 +29,19 @@ end
       task("HippieCompletion") {
         text(RubyLessonsBundle.message("ruby.hippie.completion.invoke.hippie.completion", action(it)))
         trigger(it) { editor.document.text == step1 }
+        restoreIfModifiedOrMoved()
         test { actions(it) }
       }
       task("HippieCompletion") {
         text(RubyLessonsBundle.message("ruby.hippie.completion.repeat.one.time", action(it)))
         trigger(it) { editor.document.text == step2 }
+        restoreIfModifiedOrMoved()
         test { actions(it) }
       }
       task("HippieBackwardCompletion") {
         text(RubyLessonsBundle.message("ruby.hippie.completion.return.previous", action(it)))
         trigger(it) { editor.document.text == step1 }
+        restoreIfModifiedOrMoved()
         test { actions(it) }
       }
     }

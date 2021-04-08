@@ -1,19 +1,16 @@
 // Copyright 2000-2020 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package com.intellij.javascript.ift.lesson.editor
 
-import com.intellij.javascript.ift.JavaScriptLangSupport
 import com.intellij.javascript.ift.JsLessonsBundle
 import com.intellij.javascript.ift.lesson.setLanguageLevel
-import training.learn.interfaces.Module
+import training.dsl.LessonContext
+import training.dsl.LessonUtil
+import training.dsl.parseLessonSample
+import training.learn.course.KLesson
 import training.learn.js.textBeforeCaret
-import training.learn.lesson.kimpl.KLesson
-import training.learn.lesson.kimpl.LessonContext
-import training.learn.lesson.kimpl.LessonUtil
-import training.learn.lesson.kimpl.parseLessonSample
 
-class BasicCompletionLesson(module: Module)
-  : KLesson("The Nuts and Bolts of Code Completion", JsLessonsBundle.message("js.editor.completion.title"), module,
-            JavaScriptLangSupport.lang) {
+class BasicCompletionLesson
+  : KLesson("The Nuts and Bolts of Code Completion", JsLessonsBundle.message("js.editor.completion.title")) {
 
   val sample = parseLessonSample("""
         let favoriteAnimals = ['dog', 'cat', 'unicorn'];

@@ -6,7 +6,7 @@ import com.intellij.diagram.components.DiagramNodeContainer;
 import com.intellij.diagram.extras.DiagramExtras;
 import com.intellij.diagram.presentation.DiagramState;
 import com.intellij.icons.AllIcons;
-import com.intellij.lang.javascript.modules.diagramm.JSModulesDiagramUtils;
+import com.intellij.lang.javascript.modules.diagram.JSModulesDiagramUtils;
 import com.intellij.openapi.actionSystem.*;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.graph.GraphManager;
@@ -76,7 +76,7 @@ public final class AngularUiRouterDiagramProvider extends BaseDiagramProvider<Di
       }
 
       @Override
-      public @Nullable DiagramObject resolveElementByFQN(String fqn, Project project) {
+      public @Nullable DiagramObject resolveElementByFQN(@NotNull String fqn, @NotNull Project project) {
         final VirtualFile file = LocalFileSystem.getInstance().findFileByPath(fqn);
         if (file == null) {
           return null;
@@ -90,18 +90,18 @@ public final class AngularUiRouterDiagramProvider extends BaseDiagramProvider<Di
     };
     myElementManager = new AbstractDiagramElementManager<>() {
       @Override
-      public Object[] getNodeItems(DiagramObject parent) {
+      public Object @NotNull [] getNodeItems(DiagramObject parent) {
         return ArrayUtil.toObjectArray(parent.getChildrenList());
       }
 
       @Override
-      public @Nullable DiagramObject findInDataContext(DataContext context) {
+      public @Nullable DiagramObject findInDataContext(@NotNull DataContext context) {
         //todo ?
         return null;
       }
 
       @Override
-      public boolean isAcceptableAsNode(Object element) {
+      public boolean isAcceptableAsNode(@Nullable Object element) {
         return element instanceof DiagramObject;
       }
 
@@ -111,7 +111,7 @@ public final class AngularUiRouterDiagramProvider extends BaseDiagramProvider<Di
       }
 
       @Override
-      public @Nullable SimpleColoredText getItemName(Object element, DiagramState presentation) {
+      public @Nullable SimpleColoredText getItemName(@Nullable Object element, @NotNull DiagramState presentation) {
         if (element instanceof DiagramObject) {
           return new SimpleColoredText(((DiagramObject)element).getName(), SimpleTextAttributes.REGULAR_ATTRIBUTES);
         }
@@ -119,7 +119,7 @@ public final class AngularUiRouterDiagramProvider extends BaseDiagramProvider<Di
       }
 
       @Override
-      public String getNodeTooltip(DiagramObject element) {
+      public @Nullable @Nls String getNodeTooltip(DiagramObject element) {
         final List<String> errors = element.getErrors();
         final List<String> warnings = element.getWarnings();
         final List<String> notes = element.getNotes();
@@ -148,7 +148,7 @@ public final class AngularUiRouterDiagramProvider extends BaseDiagramProvider<Di
       }
 
       @Override
-      public Icon getItemIcon(Object element, DiagramState presentation) {
+      public @Nullable Icon getItemIcon(@Nullable Object element, @NotNull DiagramState presentation) {
         return null; //do not show icons
       }
     };
@@ -188,36 +188,36 @@ public final class AngularUiRouterDiagramProvider extends BaseDiagramProvider<Di
   }
 
   @Override
-  public DiagramColorManager getColorManager() {
+  public @NotNull DiagramColorManager getColorManager() {
     return myColorManager;
   }
 
   @Pattern("[a-zA-Z0-9_-]*")
   @Override
-  public String getID() {
+  public @NotNull String getID() {
     return ANGULAR_UI_ROUTER;
   }
 
   @Override
-  public DiagramElementManager<DiagramObject> getElementManager() {
+  public @NotNull DiagramElementManager<DiagramObject> getElementManager() {
     return myElementManager;
   }
 
   @Override
-  public DiagramVfsResolver<DiagramObject> getVfsResolver() {
+  public @NotNull DiagramVfsResolver<DiagramObject> getVfsResolver() {
     return myResolver;
   }
 
   @Override
-  public String getPresentableName() {
+  public @NotNull String getPresentableName() {
     return AngularJSBundle.message("angularjs.ui.router.diagram.provider.name");
   }
 
   @Override
-  public DiagramDataModel<DiagramObject> createDataModel(@NotNull Project project,
-                                                         @Nullable DiagramObject element,
-                                                         @Nullable VirtualFile file,
-                                                         DiagramPresentationModel presentationModel) {
+  public @NotNull DiagramDataModel<DiagramObject> createDataModel(@NotNull Project project,
+                                                                  @Nullable DiagramObject element,
+                                                                  @Nullable VirtualFile file,
+                                                                  @NotNull DiagramPresentationModel presentationModel) {
     if (element == null || element.getNavigationTarget() == null) return null;
     final VirtualFile virtualFile = element.getNavigationTarget().getContainingFile().getVirtualFile();
     final AngularUiRouterGraphBuilder.GraphNodesBuilder nodesBuilder =
@@ -229,7 +229,7 @@ public final class AngularUiRouterDiagramProvider extends BaseDiagramProvider<Di
   }
 
   @Override
-  public @NotNull DiagramPresentationModel createPresentationModel(Project project, Graph2D graph) {
+  public @NotNull DiagramPresentationModel createPresentationModel(@NotNull Project project, @NotNull Graph2D graph) {
     return new DiagramPresentationModelImpl(graph, project, this) {
       @Override
       public boolean allowChangeVisibleCategories() {
@@ -266,7 +266,7 @@ public final class AngularUiRouterDiagramProvider extends BaseDiagramProvider<Di
       private final Set<AngularUiRouterEdge> myVisibleEdges = new HashSet<>();
 
       @Override
-      public EdgeLabel[] getEdgeLabels(DiagramEdge umlEdge, String label) {
+      public EdgeLabel @NotNull [] getEdgeLabels(@Nullable DiagramEdge umlEdge, @NotNull String label) {
         if (!(umlEdge instanceof AngularUiRouterEdge)) return super.getEdgeLabels(umlEdge, label);
         AngularUiRouterEdge angularEdge = (AngularUiRouterEdge)umlEdge;
         if (!isShowEdgeLabels() || StringUtil.isEmptyOrSpaces(angularEdge.getLabel())) {
@@ -355,7 +355,7 @@ public final class AngularUiRouterDiagramProvider extends BaseDiagramProvider<Di
       }
 
       @Override
-      public void customizeSettings(Graph2DView view, EditMode editMode) {
+      public void customizeSettings(@NotNull Graph2DView view, @NotNull EditMode editMode) {
         super.customizeSettings(view, editMode);
         view.getGraph2D().addGraph2DSelectionListener(new Graph2DSelectionListener() {
           @Override
@@ -427,18 +427,15 @@ public final class AngularUiRouterDiagramProvider extends BaseDiagramProvider<Di
       }
 
       @Override
-      public DefaultUmlRenderer getRenderer() {
-        if (myRenderer == null) {
-          myRenderer = new DefaultUmlRenderer(getBuilder(), createModificationTracker()) {
-            @Override
-            public void tuneNode(NodeRealizer realizer, JPanel wrapper) {
-              wrapper.setBorder(JBUI.Borders.empty());
-              if (wrapper.getParent() instanceof JComponent) ((JComponent)wrapper.getParent()).setBorder(JBUI.Borders.empty());
-              super.tuneNode(realizer, wrapper);
-            }
-          };
-        }
-        return myRenderer;
+      protected @NotNull DefaultUmlRenderer createRenderer() {
+        return new DefaultUmlRenderer(getBuilder(), getModificationTrackerOfViewUpdates()) {
+          @Override
+          public void tuneNode(NodeRealizer realizer, JPanel wrapper) {
+            wrapper.setBorder(JBUI.Borders.empty());
+            if (wrapper.getParent() instanceof JComponent) ((JComponent)wrapper.getParent()).setBorder(JBUI.Borders.empty());
+            super.tuneNode(realizer, wrapper);
+          }
+        };
       }
     };
   }
@@ -461,7 +458,7 @@ public final class AngularUiRouterDiagramProvider extends BaseDiagramProvider<Di
   public @NotNull DiagramExtras<DiagramObject> getExtras() {
     return new DiagramExtras<>() {
       @Override
-      public List<AnAction> getExtraActions() {
+      public @NotNull List<AnAction> getExtraActions() {
         return Collections.singletonList(new MyEditSourceAction());
       }
 
@@ -496,7 +493,7 @@ public final class AngularUiRouterDiagramProvider extends BaseDiagramProvider<Di
         list.add(settings.getDirectedOrthogonalLayouter());
         //list.add(settings.getGroupLayouter());
         list.add(settings.getHVTreeLayouter());
-        list.add(settings.getOrthogonalLayouter());
+        //list.add(settings.getChannelLayouter());
         for (CanonicMultiStageLayouter current : list) {
           final ParallelEdgeLayouter parallelEdgeLayouter = GraphManager.getGraphManager().createParallelEdgeLayouter();
           parallelEdgeLayouter.setLineDistance(40);
@@ -561,16 +558,20 @@ public final class AngularUiRouterDiagramProvider extends BaseDiagramProvider<Di
         e.getPresentation().setEnabled(false);
         return;
       }
-      final List<DiagramNode> nodes = JSModulesDiagramUtils.getSelectedNodes(e);
+      final List<DiagramNode<?>> nodes = JSModulesDiagramUtils.getSelectedNodes(e);
       e.getPresentation().setEnabled(nodes != null && nodes.size() == 1 && nodes.get(0) instanceof AngularUiRouterNode);
     }
 
     @Override
     public void actionPerformed(@NotNull AnActionEvent e) {
       final Project project = e.getData(CommonDataKeys.PROJECT);
-      if (project == null) return;
-      final List<DiagramNode> nodes = JSModulesDiagramUtils.getSelectedNodes(e);
-      if (nodes == null || nodes.size() != 1 || !(nodes.get(0) instanceof AngularUiRouterNode)) return;
+      if (project == null) {
+        return;
+      }
+      final List<DiagramNode<?>> nodes = JSModulesDiagramUtils.getSelectedNodes(e);
+      if (nodes == null || nodes.size() != 1 || !(nodes.get(0) instanceof AngularUiRouterNode)) {
+        return;
+      }
 
       final AngularUiRouterNode node = (AngularUiRouterNode)nodes.get(0);
       final DiagramObject main = node.getIdentifyingElement();

@@ -633,7 +633,7 @@ export default {
 </script>
 """)
       myFixture.completeBasic()
-      assertSameElements(myFixture.lookupElementStrings!!, "open", "opener", "openDatabase")
+      assertSameElements(myFixture.lookupElementStrings!!, "open", "opener")
     }
   }
 
@@ -1206,24 +1206,25 @@ export default class ComponentInsertion extends Vue {
     myFixture.completeBasic()
     myFixture.assertPreferredCompletionItems(0, // first 3 items come from the BAlert component
                                              "@dismiss-count-down", "@dismissed", "@input",
-                                             "@abort", "@autocomplete", "@autocompleteerror", "@blur", "@cancel", "@canplay",
-                                             "@canplaythrough", "@change", "@click", "@close", "@contextmenu", "@cuechange", "@dblclick")
+                                             "@abort", "@auxclick", "@blur", "@cancel", "@canplay",
+                                             "@canplaythrough", "@change", "@click", "@close", "@contextmenu",
+                                             "@copy", "@cuechange", "@cut", "@dblclick")
 
     myFixture.configureByText("foo.vue", "<template> <div @c<caret> </template>")
     myFixture.completeBasic()
-    assertSameElements(myFixture.lookupElementStrings!!, "@cancel", "@click", "@canplaythrough", "@close", "@change", "@canplay",
-                       "@cuechange", "@contextmenu")
+    assertSameElements(myFixture.lookupElementStrings!!, "@copy", "@cancel", "@click", "@canplaythrough", "@close",
+                       "@change", "@canplay", "@cut", "@cuechange", "@contextmenu")
   }
 
   fun testEventsAfterVOn() {
     myFixture.configureByText("foo.vue", "<template> <MyComponent v-on:cl<caret> </template>")
     myFixture.completeBasic()
-    assertSameElements(myFixture.lookupElementStrings!!, "click", "close", "dblclick")
+    assertSameElements(myFixture.lookupElementStrings!!, "auxclick", "click", "close", "dblclick")
 
     myFixture.configureByText("foo.vue", "<template> <div v-on:<caret> </template>")
     myFixture.completeBasic()
-    myFixture.assertPreferredCompletionItems(0, "abort", "autocomplete", "autocompleteerror", "blur", "cancel", "canplay",
-                                             "canplaythrough", "change", "click")
+    myFixture.assertPreferredCompletionItems(0, "abort", "auxclick", "blur",
+                                             "cancel", "canplay", "canplaythrough", "change", "click")
   }
 
 
@@ -1259,7 +1260,7 @@ export default class ComponentInsertion extends Vue {
     myFixture.completeBasic()
     (myFixture.lookup as LookupImpl).finishLookup(Lookup.NORMAL_SELECT_CHAR)
     // new completion must start
-    myFixture.assertPreferredCompletionItems(0, "abort", "autocomplete", "autocompleteerror", "blur", "cancel", "canplay")
+    myFixture.assertPreferredCompletionItems(0, "abort", "auxclick", "blur", "cancel", "canplay")
     (myFixture.lookup as LookupImpl).finishLookup(Lookup.NORMAL_SELECT_CHAR)
     myFixture.checkResult("<div v-on:abort=\"<caret>\">")
   }
@@ -1478,7 +1479,7 @@ export default class ComponentInsertion extends Vue {
              "!type#100", "!value#100", "about#0", "accesskey#0", "align#0", "autocapitalize#0", "autofocus#0", "class#0",
              "content#0", "contenteditable#0", "datafld#0", "dataformatas#0", "datasrc#0", "datatype#0", "dir#0", "draggable#0",
              "hidden#0", "id#0", "inlist#0", "inputmode#0", "is#25", "itemid#0", "itemprop#0", "itemref#0", "itemscope#0",
-             "itemtype#0", "nonce#0", "prefix#0", "property#0", "ref#25", "rel#0", "resource#0", "rev#0", "role#0", "slot#0",
+             "itemtype#0", "key#25", "nonce#0", "prefix#0", "property#0", "ref#25", "rel#0", "resource#0", "rev#0", "role#0", "slot#0",
              "slot-scope#0", "spellcheck#0", "style#0", "tabindex#0", "title#0", "translate#0", "typeof#0", "v-bind#25",
              "v-bind:#25", "v-cloak#25", "v-else#25", "v-else-if#25", "v-for#25", "v-html#25", "v-if#25", "v-model#25",
              "v-on:#25", "v-once#25", "v-pre#25", "v-show#25", "v-slot#25", "v-slot:#25", "v-text#25", "vocab#0", "xml:base#0",
@@ -1517,7 +1518,7 @@ export default class ComponentInsertion extends Vue {
     myFixture.copyDirectoryToProject("web-types", ".")
     listOf(Triple("root.vue",
                   listOf("root", "root-pkg", "foo1-pkg"),
-                  listOf("bar1-pkg", "root-sibling", "sub1", "sub2", "foo2-pkg")),
+                  listOf("root-sibling", "sub1", "sub2", "foo2-pkg")),
 
            Triple("sub1/sub1.vue",
                   listOf("sub1", "su1a", "foo1-pkg", "foo2-pkg"),
@@ -1547,7 +1548,6 @@ export default class ComponentInsertion extends Vue {
     myFixture.configureFromTempProjectFile("root.vue")
     myFixture.completeBasic()
     assertContainsElements(myFixture.lookupElementStrings!!, "foo3", "foo", "foo-bar")
-    assertDoesntContain(myFixture.lookupElementStrings!!, "foo2", "foo-foo", "foo2-bar", "foo2-foo")
   }
 
   fun testSlotPropsCompletion() {
@@ -1796,6 +1796,38 @@ export default {
   components: {FooBar}
 }
 </script>""")
+  }
+
+  fun testCastedObjectProps() {
+    myFixture.configureByFile("castedObjectProps.vue")
+    myFixture.moveToOffsetBySignature("post.<caret>")
+    myFixture.completeBasic()
+    assertSameElements(myFixture.renderLookupItems(true, true, false),
+                       listOf("!slug#string#101", "propertyIsEnumerable#boolean#98", "isPrototypeOf#boolean#98",
+                              "toLocaleString#string#98", "!id#number#101", "constructor#Function#98", "valueOf#Object#98",
+                              "!subtitle#string#101", "toString#string#98", "!title#string#101", "hasOwnProperty#boolean#98"))
+    myFixture.moveToOffsetBySignature("callback.<caret>")
+    myFixture.completeBasic()
+    assertSameElements(myFixture.renderLookupItems(true, true, false),
+                       listOf("!okMessage#string#101", "!cancelMessage#string#101", "propertyIsEnumerable#boolean#98", "isPrototypeOf#boolean#98",
+                              "toLocaleString#string#98", "constructor#Function#98", "valueOf#Object#98",
+                              "toString#string#98", "!title#string#101", "hasOwnProperty#boolean#98"))
+    myFixture.moveToOffsetBySignature("message.<caret>")
+    myFixture.completeBasic()
+    assertSameElements(myFixture.renderLookupItems(true, true, false),
+                       listOf("propertyIsEnumerable#boolean#98", "isPrototypeOf#boolean#98",
+                              "toLocaleString#string#98", "constructor#Function#98", "valueOf#Object#98",
+                              "toString#string#98", "!title#string#101", "hasOwnProperty#boolean#98"))
+  }
+
+  fun testImportVueExtend() {
+    myFixture.configureByText("FooBar.vue", "<script>export default Vue.extend({props: {}});</script>")
+    myFixture.configureByText("Test.vue", "<script>export default Vue.extend({name: 'FooBar2'});</script>")
+    myFixture.configureByText("FooBar3.vue", "<script>export default Vue.extend({data: function(){}});</script>")
+    myFixture.configureByText("FooBar4.vue", "<script>export default Vue.extend({});</script>")
+    myFixture.configureByText("check.vue", "<template><foo-<caret></template>")
+    myFixture.completeBasic()
+    assertEquals("foo-bar, foo-bar2, foo-bar3, foo-bar4", (myFixture.lookupElementStrings ?: emptyList()).joinToString())
   }
 
   private fun assertDoesntContainVueLifecycleHooks() {

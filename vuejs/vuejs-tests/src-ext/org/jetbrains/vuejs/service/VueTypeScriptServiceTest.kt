@@ -9,7 +9,7 @@ import com.intellij.lang.javascript.typescript.service.TypeScriptServiceTestBase
 import com.intellij.lang.typescript.compiler.TypeScriptCompilerSettings
 import com.intellij.openapi.application.WriteAction
 import com.intellij.openapi.fileEditor.FileDocumentManager
-import com.intellij.testFramework.JSUnit38AssumeSupportRunner
+import com.intellij.testFramework.JUnit38AssumeSupportRunner
 import com.intellij.util.containers.ContainerUtil
 import com.intellij.util.ui.UIUtil
 import junit.framework.TestCase
@@ -19,7 +19,7 @@ import org.jetbrains.vuejs.lang.typescript.service.VueTypeScriptService
 import org.jetbrains.vuejs.lang.vueRelativeTestDataPath
 import org.junit.runner.RunWith
 
-@RunWith(JSUnit38AssumeSupportRunner::class)
+@RunWith(JUnit38AssumeSupportRunner::class)
 class VueTypeScriptServiceTest : TypeScriptServiceTestBase() {
   override fun getService(): JSLanguageServiceBase {
     val services = JSLanguageServiceProvider.getLanguageServices(project)
@@ -47,6 +47,14 @@ class VueTypeScriptServiceTest : TypeScriptServiceTestBase() {
     doTestWithCopyDirectory()
     myFixture.configureByFile("SimpleVueNoTs.vue")
     checkHighlightingByOptions(false)
+  }
+
+  @TypeScriptVersion(TypeScriptVersions.TS26)
+  fun testGotoDeclaration() {
+    myFixture.configureVueDependencies(VueTestModule.VUE_2_6_10)
+    myFixture.configureByFile("GotoDeclaration.vue")
+    myFixture.performEditorAction("GotoDeclaration")
+    TestCase.assertEquals(2399, myFixture.editor.caretModel.currentCaret.offset)
   }
 
   @TypeScriptVersion(TypeScriptVersions.TS26)

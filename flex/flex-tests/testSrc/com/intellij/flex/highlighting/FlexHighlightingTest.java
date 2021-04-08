@@ -1,4 +1,4 @@
-// Copyright 2000-2020 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
+// Copyright 2000-2021 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package com.intellij.flex.highlighting;
 
 import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer;
@@ -19,6 +19,7 @@ import com.intellij.ide.fileTemplates.FileTemplateManager;
 import com.intellij.ide.fileTemplates.FileTemplateUtil;
 import com.intellij.javascript.flex.css.FlexCSSDialect;
 import com.intellij.javascript.flex.mxml.schema.FlexMxmlNSDescriptor;
+import com.intellij.lang.actionscript.psi.ActionScriptPsiImplUtil;
 import com.intellij.lang.css.CssDialect;
 import com.intellij.lang.css.CssDialectMappings;
 import com.intellij.lang.injection.InjectedLanguageManager;
@@ -44,7 +45,6 @@ import com.intellij.lang.javascript.psi.ecmal4.JSAttributeList;
 import com.intellij.lang.javascript.psi.ecmal4.JSAttributeListOwner;
 import com.intellij.lang.javascript.psi.ecmal4.JSClass;
 import com.intellij.lang.javascript.psi.ecmal4.JSUseNamespaceDirective;
-import com.intellij.lang.javascript.psi.impl.JSPsiImplUtils;
 import com.intellij.lang.javascript.psi.resolve.ActionScriptResolveUtil;
 import com.intellij.lang.javascript.psi.resolve.JSClassResolver;
 import com.intellij.lang.properties.PropertiesBundle;
@@ -104,7 +104,6 @@ import com.intellij.xml.XmlNSDescriptor;
 import com.intellij.xml.impl.dtd.XmlNSDescriptorImpl;
 import com.intellij.xml.util.CheckXmlFileWithXercesValidatorInspection;
 import com.sixrr.inspectjs.validity.BadExpressionStatementJSInspection;
-import gnu.trove.THashSet;
 import org.jetbrains.annotations.NonNls;
 import org.jetbrains.annotations.NotNull;
 
@@ -800,7 +799,7 @@ public class FlexHighlightingTest extends ActionScriptDaemonAnalyzerTestCase {
     doTestFor(true, testName + ".as", testName + ".swc");
     checkNavigatableSymbols("layoutObject");
 
-    final Set<String> resolvedNses = new THashSet<>();
+    final Set<String> resolvedNses = new HashSet<>();
     final Ref<String> foundConst = new Ref<>();
     final Ref<String> foundConst2 = new Ref<>();
 
@@ -811,14 +810,14 @@ public class FlexHighlightingTest extends ActionScriptDaemonAnalyzerTestCase {
         final PsiElement resolve = node.resolve();
 
         if (node.getParent() instanceof JSUseNamespaceDirective) {
-          foundConst2.set(JSPsiImplUtils.calcNamespaceReference(node.getParent()));
+          foundConst2.set(ActionScriptPsiImplUtil.calcNamespaceReference(node.getParent()));
         }
         else if (resolve instanceof JSVariable && ((JSVariable)resolve).isConst()) {
           foundConst.set(StringUtil.stripQuotesAroundValue(((JSVariable)resolve).getInitializer().getText()));
         }
         if (resolve instanceof JSAttributeListOwner) {
           final JSAttributeList attributeList = ((JSAttributeListOwner)resolve).getAttributeList();
-          final String ns = attributeList != null ? attributeList.resolveNamespaceValue() : null;
+          final String ns = ActionScriptPsiImplUtil.resolveNamespaceValue(attributeList);
           if (ns != null) resolvedNses.add(ns);
         }
       }

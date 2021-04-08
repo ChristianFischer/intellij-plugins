@@ -4,27 +4,32 @@ package org.jetbrains.vuejs.codeInsight
 import com.intellij.codeInsight.completion.CompletionUtil
 import com.intellij.extapi.psi.ASTWrapperPsiElement
 import com.intellij.extapi.psi.StubBasedPsiElementBase
+import com.intellij.lang.ecmascript6.psi.ES6ImportCall
 import com.intellij.lang.ecmascript6.psi.JSExportAssignment
 import com.intellij.lang.ecmascript6.resolve.ES6PsiUtil
 import com.intellij.lang.injection.InjectedLanguageManager
 import com.intellij.lang.javascript.JSStubElementTypes
 import com.intellij.lang.javascript.index.JSSymbolUtil
 import com.intellij.lang.javascript.psi.*
+import com.intellij.lang.javascript.psi.ecma6.TypeScriptAsExpression
 import com.intellij.lang.javascript.psi.impl.JSPsiImplUtils
 import com.intellij.lang.javascript.psi.resolve.JSClassResolver
 import com.intellij.lang.javascript.psi.types.*
 import com.intellij.lang.javascript.psi.types.evaluable.JSApplyNewType
 import com.intellij.lang.javascript.psi.types.evaluable.JSReturnedExpressionType
 import com.intellij.lang.javascript.psi.types.primitives.JSBooleanType
-import com.intellij.lang.javascript.psi.types.primitives.JSNumberType
-import com.intellij.lang.javascript.psi.types.primitives.JSStringType
 import com.intellij.lang.javascript.psi.util.JSStubBasedPsiTreeUtil
 import com.intellij.lang.javascript.psi.util.JSStubBasedPsiTreeUtil.isStubBased
 import com.intellij.lang.typescript.modules.TypeScriptNodeReference
 import com.intellij.lang.typescript.resolve.TypeScriptAugmentationUtil
 import com.intellij.notification.NotificationGroup
 import com.intellij.notification.NotificationGroupManager
+import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.diagnostic.Logger
+import com.intellij.openapi.progress.ProcessCanceledException
+import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
+import com.intellij.openapi.util.ModificationTracker
 import com.intellij.openapi.util.text.StringUtil
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
@@ -34,6 +39,7 @@ import com.intellij.psi.impl.source.resolve.FileContextUtil
 import com.intellij.psi.tree.TokenSet
 import com.intellij.psi.util.CachedValue
 import com.intellij.psi.util.CachedValueProvider.Result.create
+import com.intellij.psi.util.CachedValuesManager
 import com.intellij.psi.util.CachedValuesManager.getCachedValue
 import com.intellij.psi.util.PsiModificationTracker
 import com.intellij.psi.xml.XmlAttribute
@@ -41,19 +47,25 @@ import com.intellij.psi.xml.XmlFile
 import com.intellij.psi.xml.XmlTag
 import com.intellij.util.ObjectUtils.tryCast
 import com.intellij.util.castSafelyTo
-import one.util.streamex.StreamEx
+import com.intellij.util.ui.EDT
 import org.jetbrains.vuejs.index.findScriptTag
+import org.jetbrains.vuejs.index.resolveLocally
 import org.jetbrains.vuejs.lang.expr.psi.VueJSEmbeddedExpression
 import org.jetbrains.vuejs.lang.html.VueLanguage
 import org.jetbrains.vuejs.model.source.PROPS_REQUIRED_PROP
 import org.jetbrains.vuejs.model.source.PROPS_TYPE_PROP
+import org.jetbrains.vuejs.types.asCompleteType
 import java.util.*
+import java.util.concurrent.Callable
 import java.util.concurrent.ConcurrentHashMap
-import kotlin.collections.HashSet
+import java.util.concurrent.Future
+import java.util.concurrent.TimeUnit
 import kotlin.reflect.KClass
 
 const val LANG_ATTRIBUTE_NAME = "lang"
 const val SETUP_ATTRIBUTE_NAME = "setup"
+const val REF_ATTRIBUTE_NAME = "ref"
+const val MODULE_ATTRIBUTE_NAME = "module"
 const val ATTR_DIRECTIVE_PREFIX = "v-"
 const val ATTR_EVENT_SHORTHAND = '@'
 const val ATTR_SLOT_SHORTHAND = '#'
@@ -116,17 +128,19 @@ fun getStringLiteralsFromInitializerArray(holder: PsiElement): List<JSLiteralExp
 }
 
 @StubSafe
-fun getTextIfLiteral(holder: PsiElement?): String? {
-  if (holder != null && holder is JSLiteralExpression) {
-    if ((holder as? StubBasedPsiElement<*>)?.stub != null) {
-      return holder.significantValue?.let { es6Unquote(it) }
-    }
-    if (holder.isQuotedLiteral) {
-      return holder.stringValue
-    }
+fun getTextIfLiteral(holder: PsiElement?): String? =
+  (if (holder is JSReferenceExpression) {
+    resolveLocally(holder).mapNotNull { (it as? JSVariable)?.initializerOrStub }.firstOrNull()
   }
-  return null
-}
+  else holder)
+    ?.castSafelyTo<JSLiteralExpression>()
+    ?.let { literalExpr ->
+      when {
+        (literalExpr as? StubBasedPsiElement<*>)?.stub != null -> literalExpr.significantValue?.let { es6Unquote(it) }
+        literalExpr.isQuotedLiteral -> literalExpr.stringValue
+        else -> null
+      }
+    }
 
 fun detectLanguage(tag: XmlTag?): String? = tag?.getAttribute(LANG_ATTRIBUTE_NAME)?.value?.trim()
 
@@ -136,15 +150,7 @@ fun detectVueScriptLanguage(file: PsiFile): String? {
   return detectLanguage(scriptTag)
 }
 
-val BOOLEAN_TYPE = JSBooleanType(true, JSTypeSource.EXPLICITLY_DECLARED, JSTypeContext.INSTANCE)
-
-private val vueTypesMap = mapOf(
-  Pair("Boolean", BOOLEAN_TYPE),
-  Pair("String", JSStringType(true, JSTypeSource.EXPLICITLY_DECLARED, JSTypeContext.INSTANCE)),
-  Pair("Number", JSNumberType(true, JSTypeSource.EXPLICITLY_DECLARED, JSTypeContext.INSTANCE)),
-  Pair("Function", JSFunctionTypeImpl(JSTypeSource.EXPLICITLY_DECLARED, listOf(), null)),
-  Pair("Array", JSArrayTypeImpl(null, JSTypeSource.EXPLICITLY_DECLARED))
-)
+val BOOLEAN_TYPE get() = JSBooleanType(true, JSTypeSource.EXPLICITLY_DECLARED, JSTypeContext.INSTANCE)
 
 fun objectLiteralFor(element: PsiElement?): JSObjectLiteralExpression? {
   return resolveElementTo(element, JSObjectLiteralExpression::class) as? JSObjectLiteralExpression?
@@ -161,7 +167,7 @@ fun resolveElementTo(element: PsiElement?, vararg classes: KClass<out JSElement>
       when (cur) {
         is JSFunction -> {
           JSStubBasedPsiTreeUtil.findReturnedExpressions(cur).asSequence()
-            .filter { JSReturnedExpressionType.isCountableReturnedExpression(it) }
+            .filter { JSReturnedExpressionType.isCountableReturnedExpression(it) || it is ES6ImportCall }
             .toCollection(queue)
         }
         is JSInitializerOwner -> {
@@ -179,6 +185,9 @@ fun resolveElementTo(element: PsiElement?, vararg classes: KClass<out JSElement>
         }
         is PsiPolyVariantReference -> cur.multiResolve(false)
           .mapNotNullTo(queue) { if (it.isValidResult) it.element else null }
+        is ES6ImportCall -> cur.resolveReferencedElements()
+          .toCollection(queue)
+        is JSEmbeddedContent -> findDefaultExport(cur)?.let { queue.add(it) }
         else -> JSStubBasedPsiTreeUtil.calculateMeaningfulElements(cur)
           .toCollection(queue)
       }
@@ -222,44 +231,41 @@ fun getStubSafeCallArguments(call: JSCallExpression): List<PsiElement> {
   return emptyList()
 }
 
-fun getJSTypeFromPropOptions(expression: JSExpression?): JSType? {
-  return when (expression) {
-    is JSReferenceExpression -> getJSTypeFromVueType(expression)
+fun getJSTypeFromPropOptions(expression: JSExpression?): JSType? =
+  when (expression) {
     is JSArrayLiteralExpression -> JSCompositeTypeImpl.getCommonType(
-      StreamEx.of(*expression.expressions)
-        .select(JSReferenceExpression::class.java)
-        .map { getJSTypeFromVueType(it) }
-        .nonNull()
-        .toList(),
+      expression.expressions.map { getJSTypeFromConstructor(it) },
       JSTypeSource.EXPLICITLY_DECLARED, false
     )
     is JSObjectLiteralExpression -> expression.findProperty(PROPS_TYPE_PROP)
       ?.value
       ?.let {
         when (it) {
-          is JSReferenceExpression -> getJSTypeFromVueType(it)
           is JSArrayLiteralExpression -> getJSTypeFromPropOptions(it)
-          else -> null
+          else -> getJSTypeFromConstructor(it)
         }
       }
-    else -> null
+    null -> null
+    else -> getJSTypeFromConstructor(expression)
   }
-}
 
-private fun getJSTypeFromVueType(reference: JSReferenceExpression): JSType {
-  return JSApplyNewType(JSTypeofTypeImpl(reference, JSTypeSourceFactory.createTypeSource(reference, false)),
-                        JSTypeSourceFactory.createTypeSource(reference.containingFile, false))
-}
+private fun getJSTypeFromConstructor(expression: JSExpression): JSType =
+  (expression as? TypeScriptAsExpression)
+    ?.type?.jsType?.castSafelyTo<JSGenericTypeImpl>()
+    ?.takeIf { (it.type as? JSTypeImpl)?.typeText == "PropType" }
+    ?.arguments?.getOrNull(0)
+    ?.asCompleteType()
+  ?: JSApplyNewType(JSTypeofTypeImpl(expression, JSTypeSourceFactory.createTypeSource(expression, false)),
+                    JSTypeSourceFactory.createTypeSource(expression.containingFile, false))
 
-fun getRequiredFromPropOptions(expression: JSExpression?): Boolean {
-  return (expression as? JSObjectLiteralExpression)
-           ?.findProperty(PROPS_REQUIRED_PROP)
-           ?.literalExpressionInitializer
-           ?.let {
-             it.isBooleanLiteral && "true" == it.significantValue
-           }
-         ?: false
-}
+fun getRequiredFromPropOptions(expression: JSExpression?): Boolean =
+  (expression as? JSObjectLiteralExpression)
+    ?.findProperty(PROPS_REQUIRED_PROP)
+    ?.literalExpressionInitializer
+    ?.let {
+      it.isBooleanLiteral && "true" == it.significantValue
+    }
+  ?: false
 
 fun <T : JSExpression> findExpressionInAttributeValue(attribute: XmlAttribute,
                                                       expressionClass: Class<T>): T? {
@@ -321,7 +327,7 @@ fun <T : PsiElement> resolveSymbolFromNodeModule(scope: PsiElement?, moduleName:
       ?.let { module ->
         val symbols = ES6PsiUtil.resolveSymbolInModule(symbolName, file, module)
         if (symbols.isEmpty()) {
-          TypeScriptAugmentationUtil.getModuleAugmentations(module)
+          TypeScriptAugmentationUtil.getModuleAugmentations(module, module)
             .asSequence()
             .filterIsInstance<JSElement>()
             .flatMap { ES6PsiUtil.resolveSymbolInModule(symbolName, file, it).asSequence() }
@@ -336,6 +342,6 @@ fun <T : PsiElement> resolveSymbolFromNodeModule(scope: PsiElement?, moduleName:
       ?.let {
         return@getCachedValue create(it, PsiModificationTracker.MODIFICATION_COUNT)
       }
-    create<T>(null, PsiModificationTracker.MODIFICATION_COUNT)
+    create(null, PsiModificationTracker.MODIFICATION_COUNT)
   }
 }

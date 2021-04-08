@@ -1,13 +1,12 @@
 package com.jetbrains.swift.ift.lesson.editor
 
 import com.jetbrains.swift.ift.SwiftLessonsBundle
-import training.learn.interfaces.Module
-import training.learn.lesson.kimpl.KLesson
-import training.learn.lesson.kimpl.LessonContext
-import training.learn.lesson.kimpl.LessonSample
-import training.learn.lesson.kimpl.parseLessonSample
+import training.dsl.LessonContext
+import training.dsl.LessonSample
+import training.dsl.parseLessonSample
+import training.learn.course.KLesson
 
-class SwiftMoveLesson(module: Module) : KLesson("swift.editorbasics.move", SwiftLessonsBundle.message("swift.editor.move.name"), module, "Swift") {
+class SwiftMoveLesson : KLesson("swift.editorbasics.move", SwiftLessonsBundle.message("swift.editor.move.name")) {
 
 
   private val sample: LessonSample = parseLessonSample("""

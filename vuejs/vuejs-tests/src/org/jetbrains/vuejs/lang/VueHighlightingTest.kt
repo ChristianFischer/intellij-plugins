@@ -1,6 +1,7 @@
 // Copyright 2000-2020 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package org.jetbrains.vuejs.lang
 
+import com.intellij.htmltools.codeInspection.htmlInspections.HtmlFormInputWithoutLabelInspection
 import com.intellij.lang.javascript.JSTestUtils
 import com.intellij.lang.javascript.JSTestUtils.testWithinLanguageLevel
 import com.intellij.lang.javascript.JavaScriptBundle
@@ -1436,6 +1437,20 @@ var <info descr="global variable">i</info>:<info descr="exported class">SpaceInt
     myFixture.checkHighlighting()
   }
 
+  fun testKeyAttributeSupport() {
+    myFixture.configureByText("a-component.vue", """
+      <template>
+        <input v-for='d in [1,2,3]' :key='d'>
+        <div class='hello' 
+              v-show='<weak_warning descr="Unresolved variable or type msg">msg</weak_warning>' 
+              key='ley1' 
+              <warning descr="Attribute kay is not allowed here">kay</warning>='1' >
+        </div>
+      </template>
+    """)
+    myFixture.checkHighlighting()
+  }
+
   fun testPropsWithOptions() {
     myFixture.configureByFiles("propsWithOptions/usage.vue", "propsWithOptions/component.vue")
     myFixture.checkHighlighting()
@@ -1547,22 +1562,36 @@ var <info descr="global variable">i</info>:<info descr="exported class">SpaceInt
 
   fun testIndirectExport() {
     myFixture.configureVueDependencies(VueTestModule.VUE_2_6_10)
-    myFixture.enableInspections(VueInspectionsProvider())
     myFixture.configureByFile("indirectExport.vue")
     myFixture.checkHighlighting()
   }
 
   fun testAsyncSetup() {
     myFixture.configureVueDependencies(VueTestModule.VUE_3_0_0)
-    myFixture.enableInspections(VueInspectionsProvider())
     myFixture.configureByFile("asyncSetup.vue")
     myFixture.checkHighlighting()
   }
 
   fun testScriptSetup() {
     myFixture.configureVueDependencies(VueTestModule.VUE_3_0_0)
-    myFixture.enableInspections(VueInspectionsProvider())
     myFixture.configureByFile("scriptSetup.vue")
+    myFixture.checkHighlighting()
+  }
+
+  fun testMissingLabelSuppressed() {
+    myFixture.configureVueDependencies(VueTestModule.VUE_3_0_0)
+    myFixture.enableInspections(HtmlFormInputWithoutLabelInspection())
+    myFixture.configureByText("Foo.vue", """<input>""")
+    myFixture.checkHighlighting()
+  }
+
+  fun testSuperComponentMixin() {
+    myFixture.configureByFiles("superComponentMixin/MainMenu.vue", "superComponentMixin/mixins.ts")
+    myFixture.checkHighlighting()
+  }
+
+  fun testCompositionPropsJS() {
+    myFixture.configureByFiles("compositionPropsJS.vue")
     myFixture.checkHighlighting()
   }
 

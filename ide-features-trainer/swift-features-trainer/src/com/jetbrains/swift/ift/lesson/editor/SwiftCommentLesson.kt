@@ -1,13 +1,12 @@
 package com.jetbrains.swift.ift.lesson.editor
 
 import com.jetbrains.swift.ift.SwiftLessonsBundle
-import training.learn.interfaces.Module
-import training.learn.lesson.kimpl.KLesson
-import training.learn.lesson.kimpl.LessonContext
-import training.learn.lesson.kimpl.LessonSample
-import training.learn.lesson.kimpl.parseLessonSample
+import training.dsl.LessonContext
+import training.dsl.LessonSample
+import training.dsl.parseLessonSample
+import training.learn.course.KLesson
 
-class SwiftCommentLesson(module: Module) : KLesson("swift.editorbasics.commentline", SwiftLessonsBundle.message("swift.editor.comment"), module, "Swift") {
+class SwiftCommentLesson : KLesson("swift.editorbasics.commentline", SwiftLessonsBundle.message("swift.editor.comment")) {
 
 
   private val sample: LessonSample = parseLessonSample("""

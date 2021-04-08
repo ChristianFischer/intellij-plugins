@@ -14,6 +14,7 @@ import org.jetbrains.vuejs.lang.html.VueLanguage
 
 class VueTypeScriptHighlightingTest : TypeScriptHighlightingTest() {
   private val toFix = setOf(
+    "SemanticKeywords", //different visibility
     "NodeDefTypes153",
     "NodeDefTypes",
     "GenericSeveralSignaturesWithConstraint",
@@ -37,7 +38,7 @@ class VueTypeScriptHighlightingTest : TypeScriptHighlightingTest() {
   )
 
   override fun doTestFor(checkWeakWarnings: Boolean,
-                         function: Function<MutableCollection<HighlightInfo>, Void>?,
+                         function: Function<in MutableCollection<HighlightInfo>, Void>,
                          vararg fileNames: String?) {
     LOG.info("Running overridden code for vue")
     if (skipTest()) {
@@ -80,7 +81,11 @@ class VueTypeScriptHighlightingTest : TypeScriptHighlightingTest() {
 
   // these tests need to be ignored with additional code:
   override fun testIntermediateResultsNotCachedForRecursiveTypes() {
-    LOG.info("Skipping muted test")
+    //skip
+  }
+
+  override fun testTypeScriptImportStatementType() {
+    //skip
   }
 
   override fun doHighlightingWithInvokeFixAndCheckResult(fixName: String?, ext: String?, vararg files: String?) {

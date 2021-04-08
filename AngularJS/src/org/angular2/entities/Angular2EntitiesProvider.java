@@ -52,7 +52,7 @@ import static org.angular2.lang.Angular2LangUtil.isAngular2Context;
 
 public final class Angular2EntitiesProvider {
 
-  static final String TRANSFORM_METHOD = "transform";
+  public static final String TRANSFORM_METHOD = "transform";
 
   public static Angular2Entity getEntity(@Nullable PsiElement element) {
     if (element == null) {
@@ -303,7 +303,7 @@ public final class Angular2EntitiesProvider {
                                                                                     @NotNull String name,
                                                                                     @NotNull Class<T> entityClass,
                                                                                     @NotNull StubIndexKey<String, T> key,
-                                                                                    @NotNull Consumer<T> consumer) {
+                                                                                    @NotNull Consumer<? super T> consumer) {
     StubIndex.getInstance().processElements(key, name, project, GlobalSearchScope.allScope(project), entityClass, el -> {
       if (el.isValid() && !hasIvyMetadata(el)) {
         consumer.accept(el);
@@ -316,7 +316,7 @@ public final class Angular2EntitiesProvider {
                                                                     @NotNull String name,
                                                                     @NotNull StubIndexKey<String, TypeScriptClass> key,
                                                                     @NotNull Class<T> entityClass,
-                                                                    @NotNull Consumer<T> consumer) {
+                                                                    @NotNull Consumer<? super T> consumer) {
     StubIndex.getInstance().processElements(key, name, project, GlobalSearchScope.allScope(project), TypeScriptClass.class, el -> {
       if (el.isValid()) {
         T entity = tryCast(getIvyEntity(el), entityClass);

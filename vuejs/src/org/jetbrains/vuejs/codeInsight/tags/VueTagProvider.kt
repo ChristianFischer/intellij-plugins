@@ -4,18 +4,22 @@ package org.jetbrains.vuejs.codeInsight.tags
 import com.intellij.codeInsight.completion.PrioritizedLookupElement
 import com.intellij.codeInsight.lookup.LookupElement
 import com.intellij.codeInsight.lookup.LookupElementBuilder
+import com.intellij.lang.Language
 import com.intellij.lang.javascript.DialectDetector
 import com.intellij.lang.javascript.library.JSLibraryUtil
 import com.intellij.lang.javascript.psi.stubs.JSImplicitElement
 import com.intellij.lang.javascript.settings.JSApplicationSettings
 import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.util.text.StringUtil
+import com.intellij.psi.PsiFile
 import com.intellij.psi.SmartPointerManager
 import com.intellij.psi.impl.source.xml.XmlElementDescriptorProvider
+import com.intellij.psi.impl.source.xml.XmlTextImpl
 import com.intellij.psi.xml.XmlTag
 import com.intellij.xml.XmlElementDescriptor
 import com.intellij.xml.XmlTagNameProvider
 import org.jetbrains.vuejs.VuejsIcons
+import org.jetbrains.vuejs.codeInsight.LANG_ATTRIBUTE_NAME
 import org.jetbrains.vuejs.codeInsight.detectVueScriptLanguage
 import org.jetbrains.vuejs.codeInsight.fromAsset
 import org.jetbrains.vuejs.codeInsight.toAsset
@@ -30,9 +34,32 @@ private const val PLUGIN_PRIORITY = 90.0
 private const val GLOBAL_PRIORITY = 80.0
 private const val UNREGISTERED_PRIORITY = 50.0
 
-val CUSTOM_TOP_LEVEL_TAGS: Map<String, String> = mapOf(
-  Pair("i18n", "JSON")
+val CUSTOM_TOP_LEVEL_TAGS: Map<String, (XmlTag, XmlTextImpl) -> Language?> = mapOf(
+  Pair("i18n", { tag, text ->
+    tag.getAttributeValue(LANG_ATTRIBUTE_NAME)
+      ?.let { lang -> Language.getRegisteredLanguages().find { it.id.equals(lang, true) } }
+    ?: if (text.chars.find { !it.isWhitespace() }?.let { it == '{' || it == '[' } != false)
+      Language.findLanguageByID("JSON")
+    else
+      Language.findLanguageByID("yaml")
+  })
 )
+
+fun resolveComponent(context: VueEntitiesContainer, tagName: String, containingFile: PsiFile): List<VueComponent> {
+  val result = mutableListOf<VueComponent>()
+  val normalizedTagName = fromAsset(tagName)
+  context.acceptEntities(object : VueModelProximityVisitor() {
+    override fun visitComponent(name: String, component: VueComponent, proximity: Proximity): Boolean {
+      return acceptSameProximity(proximity, fromAsset(name) == normalizedTagName) {
+        // Cannot self refer without export declaration with component name
+        if ((component.source as? JSImplicitElement)?.context != containingFile) {
+          result.add(component)
+        }
+      }
+    }
+  }, VueModelVisitor.Proximity.GLOBAL)
+  return result
+}
 
 class VueTagProvider : XmlElementDescriptorProvider, XmlTagNameProvider {
   override fun getDescriptor(tag: XmlTag?): XmlElementDescriptor? {
@@ -40,23 +67,11 @@ class VueTagProvider : XmlElementDescriptorProvider, XmlTagNameProvider {
         || DumbService.isDumb(tag.project)
         || !isVueContext(tag)) return null
 
-    val tagName = fromAsset(tag.name)
-    val containingFile = tag.containingFile.originalFile
 
-    val components = mutableListOf<VueComponent>()
-    VueModelManager.findEnclosingContainer(tag)?.acceptEntities(object : VueModelProximityVisitor() {
-      override fun visitComponent(name: String, component: VueComponent, proximity: Proximity): Boolean {
-        return acceptSameProximity(proximity, fromAsset(name) == tagName) {
-          // Cannot self refer without export declaration with component name
-          if ((component.source as? JSImplicitElement)?.context != containingFile) {
-            components.add(component)
-          }
-        }
-      }
-    }, VueModelVisitor.Proximity.GLOBAL)
-
-    if (components.isNotEmpty())
-      return VueElementDescriptor(tag, components)
+    VueModelManager.findEnclosingContainer(tag)
+      ?.let { resolveComponent(it, tag.name, tag.containingFile.originalFile) }
+      ?.takeIf { it.isNotEmpty() }
+      ?.let { return VueElementDescriptor(tag, it) }
     return CUSTOM_TOP_LEVEL_TAGS[tag.name.toLowerCase(Locale.US)]?.let { VueElementDescriptor(tag) }
   }
 

@@ -4,6 +4,7 @@ package org.angular2.codeInsight;
 import com.intellij.codeInsight.completion.*;
 import com.intellij.codeInsight.lookup.LookupElement;
 import com.intellij.codeInsight.lookup.LookupElementBuilder;
+import com.intellij.javascript.web.css.CssInBindingExpressionCompletionProvider;
 import com.intellij.lang.Language;
 import com.intellij.lang.javascript.completion.JSLookupElementInsertHandler;
 import com.intellij.lang.javascript.completion.JSLookupPriority;
@@ -34,7 +35,6 @@ import com.intellij.util.ArrayUtil;
 import com.intellij.util.ObjectUtils;
 import com.intellij.util.ProcessingContext;
 import com.intellij.util.containers.ContainerUtil;
-import com.intellij.xml.XmlAttributeDescriptor;
 import com.intellij.xml.XmlElementDescriptor;
 import com.intellij.xml.XmlExtension;
 import com.intellij.xml.util.HtmlUtil;
@@ -48,7 +48,6 @@ import org.angular2.codeInsight.tags.Angular2TagDescriptor;
 import org.angular2.codeInsight.template.Angular2StandardSymbolsScopesProvider;
 import org.angular2.codeInsight.template.Angular2TemplateScopesResolver;
 import org.angular2.css.Angular2CssAttributeNameCompletionProvider;
-import org.angular2.css.Angular2CssExpressionCompletionProvider;
 import org.angular2.entities.Angular2EntitiesProvider;
 import org.angular2.entities.Angular2Pipe;
 import org.angular2.lang.Angular2Bundle;
@@ -84,7 +83,7 @@ public class Angular2CompletionContributor extends CompletionContributor {
 
     extend(CompletionType.BASIC,
            psiElement().with(language(Angular2Language.INSTANCE)),
-           new Angular2CssExpressionCompletionProvider());
+           new CssInBindingExpressionCompletionProvider());
 
     extend(CompletionType.BASIC,
            psiElement().inside(XmlPatterns.xmlAttribute()),
@@ -100,7 +99,7 @@ public class Angular2CompletionContributor extends CompletionContributor {
   }
 
   private static <T extends PsiElement> PatternCondition<T> language(@NotNull Language language) {
-    return new PatternCondition<T>("language(" + language.getID() + ")") {
+    return new PatternCondition<>("language(" + language.getID() + ")") {
       @Override
       public boolean accepts(@NotNull T t, ProcessingContext context) {
         return language.is(PsiUtilCore.findLanguageFromElement(t));
@@ -290,18 +289,14 @@ public class Angular2CompletionContributor extends CompletionContributor {
             .nonNull()
             .flatCollection(attr -> StreamEx.of(providers).toFlatList(provider -> provider.getRelatedAttributes(attr)))
             .toSet();
-          for (XmlAttributeDescriptor descriptor : descriptors) {
-            if (descriptor instanceof Angular2AttributeDescriptor) {
-              if (!providedAttributes.contains(descriptor.getName())
-                  && isValidVariant(attribute, descriptor, attributes, extension)) {
-                Pair<LookupElement, String> elementWithPrefix =
-                  ((Angular2AttributeDescriptor)descriptor).getLookupElementWithPrefix(
-                    result.getPrefixMatcher(), moduleScope);
-                if (elementWithPrefix.first != null) {
-                  providedAttributes.add(elementWithPrefix.first.getLookupString());
-                  result.withPrefixMatcher(result.getPrefixMatcher().cloneWithPrefix(elementWithPrefix.second))
-                    .addElement(elementWithPrefix.first);
-                }
+          for (Angular2AttributeDescriptor descriptor : descriptors) {
+            if (!providedAttributes.contains(descriptor.getName())
+                && isValidVariant(attribute, descriptor, attributes, extension)) {
+              Pair<LookupElement, String> elementWithPrefix = descriptor.getLookupElementWithPrefix(result.getPrefixMatcher(), moduleScope);
+              if (elementWithPrefix.first != null) {
+                providedAttributes.add(elementWithPrefix.first.getLookupString());
+                result.withPrefixMatcher(result.getPrefixMatcher().cloneWithPrefix(elementWithPrefix.second))
+                  .addElement(elementWithPrefix.first);
               }
             }
           }

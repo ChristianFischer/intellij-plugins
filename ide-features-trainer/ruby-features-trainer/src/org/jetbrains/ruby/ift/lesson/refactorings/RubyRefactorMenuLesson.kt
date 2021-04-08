@@ -3,21 +3,21 @@ package org.jetbrains.ruby.ift.lesson.refactorings
 
 import com.intellij.openapi.project.Project
 import com.intellij.refactoring.RefactoringBundle
-import com.intellij.testGuiFramework.impl.button
-import com.intellij.testGuiFramework.impl.jList
+import com.intellij.ui.components.JBList
 import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.Types
 import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.fqn.FQN
 import org.jetbrains.plugins.ruby.ruby.codeInsight.symbols.structure.SymbolUtil
+import org.jetbrains.plugins.ruby.ruby.refactoring.pushDown.RubyPushDownHandler
 import org.jetbrains.ruby.ift.RubyLessonsBundle
-import training.commands.kotlin.TaskTestContext
+import training.dsl.LessonContext
+import training.dsl.LessonUtil.restoreIfModifiedOrMoved
+import training.dsl.defaultRestoreDelay
+import training.dsl.parseLessonSample
 import training.learn.LessonsBundle
-import training.learn.interfaces.Module
-import training.learn.lesson.kimpl.KLesson
-import training.learn.lesson.kimpl.LessonContext
-import training.learn.lesson.kimpl.parseLessonSample
+import training.learn.course.KLesson
 
-class RubyRefactorMenuLesson(module: Module)
-  : KLesson("Refactoring menu", LessonsBundle.message("refactoring.menu.lesson.name"), module, "ruby") {
+class RubyRefactorMenuLesson
+  : KLesson("Refactoring menu", LessonsBundle.message("refactoring.menu.lesson.name")) {
 
   private val sample = parseLessonSample("""
     class Animal
@@ -38,19 +38,21 @@ class RubyRefactorMenuLesson(module: Module)
     get() = {
       prepareSample(sample)
       actionTask("Refactorings.QuickListPopupAction") {
+        restoreIfModifiedOrMoved()
         RubyLessonsBundle.message("ruby.refactoring.menu.invoke.refactoring.list", action(it))
       }
       task(RefactoringBundle.message("push.members.down.title")) {
         text(RubyLessonsBundle.message("ruby.refactoring.menu.use.push.method.down", strong(it), code("meow()")))
         trigger("MemberPushDown") { checkMethodMoved(project) }
+        restoreState(delayMillis = defaultRestoreDelay) {
+          focusOwner !is JBList<*> && !checkInsidePushDownDialog()
+        }
         test {
           ideFrame {
             jList("$it...").clickItem("$it...")
           }
-          with(TaskTestContext.guiTestCase) {
-            dialog(it) {
-              button("Refactor").click()
-            }
+          dialog(it) {
+            button("Refactor").click()
           }
         }
       }
@@ -70,5 +72,11 @@ class RubyRefactorMenuLesson(module: Module)
       null)
 
     return barInDerived?.parentSymbol?.name == "Cat"
+  }
+
+  private fun checkInsidePushDownDialog(): Boolean {
+    return Thread.currentThread().stackTrace.find { element ->
+      element.className == RubyPushDownHandler::class.java.name
+    } != null
   }
 }

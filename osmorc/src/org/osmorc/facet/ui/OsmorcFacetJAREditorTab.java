@@ -25,6 +25,7 @@
 package org.osmorc.facet.ui;
 
 import com.intellij.CommonBundle;
+import com.intellij.compiler.server.BuildManager;
 import com.intellij.facet.ui.*;
 import com.intellij.openapi.compiler.CompilerPaths;
 import com.intellij.openapi.fileChooser.FileChooser;
@@ -51,7 +52,6 @@ import com.intellij.psi.PsiFile;
 import com.intellij.psi.PsiFileFactory;
 import com.intellij.ui.EditorTextField;
 import com.intellij.ui.ToolbarDecorator;
-import com.intellij.ui.UserActivityListener;
 import com.intellij.ui.UserActivityWatcher;
 import com.intellij.ui.table.JBTable;
 import org.jetbrains.annotations.Nls;
@@ -67,8 +67,6 @@ import javax.swing.event.ChangeListener;
 import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableColumn;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.io.File;
 
 import static org.jetbrains.osgi.jps.model.OutputPathType.*;
@@ -113,28 +111,12 @@ public class OsmorcFacetJAREditorTab extends FacetEditorTab {
     myIgnoreFilePatternPanel.add(myIgnoreFilePatternTextField, BorderLayout.CENTER);
 
     UserActivityWatcher watcher = new UserActivityWatcher();
-    watcher.addUserActivityListener(new UserActivityListener() {
-      @Override
-      public void stateChanged() {
-        myModified = true;
-        updateGui();
-      }
-    });
+    watcher.addUserActivityListener(() -> { myModified = true; updateGui(); });
     watcher.register(myRoot);
 
-    myJarOutputPathChooser.addActionListener(new ActionListener() {
-      @Override
-      public void actionPerformed(ActionEvent actionEvent) {
-        onOutputPathSelect();
-      }
-    });
+    myJarOutputPathChooser.addActionListener(actionEvent -> onOutputPathSelect());
 
-    ChangeListener listener = new ChangeListener() {
-      @Override
-      public void stateChanged(ChangeEvent e) {
-        updateGui();
-      }
-    };
+    ChangeListener listener = e -> updateGui();
     myPlaceInProjectWideRadioButton.addChangeListener(listener);
     myPlaceInThisPathRadioButton.addChangeListener(listener);
     myPlaceInCompilerOutputPathRadioButton.addChangeListener(listener);
@@ -158,7 +140,8 @@ public class OsmorcFacetJAREditorTab extends FacetEditorTab {
           String destinationName = preselectedPath != null ? determineMostLikelyLocationInJar(preselectedPath) : "";
           myAdditionalJARContentsTableModel.changeAdditionalJARContent(row, additionalJARContent.first, destinationName);
           myAdditionalJARContentsTable.editCellAt(row, 1);
-          IdeFocusManager.getGlobalInstance().doWhenFocusSettlesDown(() -> IdeFocusManager.getGlobalInstance().requestFocus(myAdditionalJARContentsTable.getEditorComponent(), true));
+          IdeFocusManager.getGlobalInstance().doWhenFocusSettlesDown(
+            () -> IdeFocusManager.getGlobalInstance().requestFocus(myAdditionalJARContentsTable.getEditorComponent(), true));
         }
       }
     });
@@ -172,9 +155,8 @@ public class OsmorcFacetJAREditorTab extends FacetEditorTab {
         .createPanel(), BorderLayout.CENTER);
 
     myValidatorsManager.registerValidator(new FacetEditorValidator() {
-      @NotNull
       @Override
-      public ValidationResult check() {
+      public @NotNull ValidationResult check() {
         if (StringUtil.isEmptyOrSpaces(myJarFileTextField.getText())) {
           return new ValidationResult(OsmorcBundle.message("facet.editor.jar.empty.jar.name"));
         }
@@ -273,13 +255,11 @@ public class OsmorcFacetJAREditorTab extends FacetEditorTab {
   private void updateGui() {
     myJarOutputPathChooser.setEnabled(myPlaceInThisPathRadioButton.isSelected());
 
-    Boolean bnd = myEditorContext.getUserData(OsmorcFacetGeneralEditorTab.BND_CREATION_KEY);
-    Boolean bundlor = myEditorContext.getUserData(OsmorcFacetGeneralEditorTab.BUNDLOR_CREATION_KEY);
-    boolean useExternalTool = Boolean.TRUE.equals(bnd) || Boolean.TRUE.equals(bundlor);
-    myAdditionalJARContentsTable.setEnabled(!useExternalTool);
-    myAdditionalJarContentsPanel.setEnabled(!useExternalTool);
-    myIgnoreFilePatternTextField.setEnabled(!useExternalTool);
-    myFileIgnorePatternLabel.setEnabled(!useExternalTool);
+    boolean enabled = myEditorContext.getUserData(OsmorcFacetGeneralEditorTab.EXT_TOOL_MANIFEST_CREATION_KEY) != Boolean.TRUE;
+    myAdditionalJARContentsTable.setEnabled(enabled);
+    myAdditionalJarContentsPanel.setEnabled(enabled);
+    myIgnoreFilePatternTextField.setEnabled(enabled);
+    myFileIgnorePatternLabel.setEnabled(enabled);
 
     myValidatorsManager.validate();
   }
@@ -300,15 +280,13 @@ public class OsmorcFacetJAREditorTab extends FacetEditorTab {
     });
   }
 
-  @Nls
   @Override
-  public String getDisplayName() {
+  public @Nls String getDisplayName() {
     return OsmorcBundle.message("facet.tab.jar");
   }
 
-  @NotNull
   @Override
-  public JComponent createComponent() {
+  public @NotNull JComponent createComponent() {
     return myRoot;
   }
 
@@ -325,7 +303,6 @@ public class OsmorcFacetJAREditorTab extends FacetEditorTab {
     }
 
     OsmorcFacetConfiguration configuration = (OsmorcFacetConfiguration)myEditorContext.getFacet().getConfiguration();
-
     OutputPathType pathType = getSelectedOutputPathType();
     if (pathType == SpecificOutputPath) {
       String location = myJarOutputPathChooser.getText();
@@ -341,6 +318,10 @@ public class OsmorcFacetJAREditorTab extends FacetEditorTab {
     configuration.setIgnoreFilePattern(myIgnoreFilePatternTextField.getText());
     configuration.setAlwaysRebuildBundleJAR(myAlwaysRebuildBundleJARCheckBox.isSelected());
     configuration.setAdditionalJARContents(myAdditionalJARContentsTableModel.getAdditionalContents());
+
+    if (myModified) {
+      BuildManager.getInstance().clearState(myEditorContext.getProject());
+    }
     myModified = false;
   }
 

@@ -34,6 +34,7 @@ import com.intellij.openapi.ui.popup.JBPopupFactory;
 import com.intellij.openapi.util.Pair;
 import com.intellij.ui.DoubleClickListener;
 import com.intellij.ui.IdeBorderFactory;
+import com.intellij.ui.LayeredIcon;
 import com.intellij.ui.ToolbarDecorator;
 import com.intellij.ui.components.JBList;
 import com.intellij.util.ObjectUtils;
@@ -97,6 +98,7 @@ public class FrameworkDefinitionsEditorComponent {
           false, false, false, null, -1, null
         ).show(Objects.requireNonNull(b.getPreferredPopupPoint()))
         )
+        .setAddIcon(LayeredIcon.ADD_WITH_DROPDOWN)
         .setRemoveAction((b) -> removeFrameworkInstance())
         .setEditAction((b) -> editFrameworkInstance())
         .createPanel(), BorderLayout.CENTER

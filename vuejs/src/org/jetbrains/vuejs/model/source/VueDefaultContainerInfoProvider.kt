@@ -21,6 +21,7 @@ import org.jetbrains.vuejs.codeInsight.*
 import org.jetbrains.vuejs.index.*
 import org.jetbrains.vuejs.model.*
 import org.jetbrains.vuejs.model.source.VueComponents.Companion.getComponentDescriptor
+import org.jetbrains.vuejs.types.VueSourcePropType
 
 class VueDefaultContainerInfoProvider : VueContainerInfoProvider.VueInitializedContainerInfoProvider(::VueSourceContainerInfo) {
 
@@ -156,7 +157,7 @@ class VueDefaultContainerInfoProvider : VueContainerInfoProvider.VueInitializedC
             else -> getComponentDescriptor(meaningfulElement as? JSElement)
               ?.let { VueModelManager.getComponent(it) }
           }
-          ?: VueUnresolvedComponent()
+          ?: VueUnresolvedComponent(declaration)
         }
         .distinctKeys()
         .into(mutableMapOf<String, VueComponent>())
@@ -198,7 +199,7 @@ class VueDefaultContainerInfoProvider : VueContainerInfoProvider.VueInitializedC
                                        sourceElement: PsiElement) : VueInputProperty {
 
     override val source: VueImplicitElement =
-      VueImplicitElement(name, getJSTypeFromPropOptions((sourceElement as? JSProperty)?.value),
+      VueImplicitElement(name, (sourceElement as? JSProperty)?.let { VueSourcePropType(it) },
                          sourceElement, JSImplicitElement.Type.Property, true)
     override val jsType: JSType? = source.jsType
     override val required: Boolean = getRequiredFromPropOptions((sourceElement as? JSProperty)?.value)

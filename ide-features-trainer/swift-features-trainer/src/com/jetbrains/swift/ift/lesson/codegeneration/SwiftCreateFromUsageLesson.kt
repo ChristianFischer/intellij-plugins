@@ -1,10 +1,14 @@
 package com.jetbrains.swift.ift.lesson.codegeneration
 
 import com.jetbrains.swift.ift.SwiftLessonsBundle
-import training.learn.interfaces.Module
-import training.learn.lesson.kimpl.*
+import training.dsl.LessonContext
+import training.dsl.LessonSample
+import training.dsl.LessonUtil
+import training.dsl.parseLessonSample
+import training.learn.course.KLesson
 
-class SwiftCreateFromUsageLesson(module: Module) : KLesson("swift.codegeneration.createfromusage", SwiftLessonsBundle.message("swift.codegeneration.cfu.name"), module, "Swift") {
+class SwiftCreateFromUsageLesson : KLesson("swift.codegeneration.createfromusage",
+                                           SwiftLessonsBundle.message("swift.codegeneration.cfu.name")) {
 
   private val sample: LessonSample = parseLessonSample("""
 import UIKit

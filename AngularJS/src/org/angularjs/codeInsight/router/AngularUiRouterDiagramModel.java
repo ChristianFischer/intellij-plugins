@@ -1,10 +1,12 @@
 package org.angularjs.codeInsight.router;
 
+import com.intellij.CommonBundle;
 import com.intellij.diagram.DiagramDataModel;
 import com.intellij.diagram.DiagramNode;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.ModificationTracker;
+import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiManager;
 import org.jetbrains.annotations.NotNull;
@@ -44,12 +46,12 @@ public class AngularUiRouterDiagramModel extends DiagramDataModel<DiagramObject>
   }
 
   @Override
-  public @NotNull String getNodeName(DiagramNode<DiagramObject> n) {
-    return n.getTooltip();
+  public @NotNull String getNodeName(@NotNull DiagramNode<DiagramObject> n) {
+    return StringUtil.notNullize(n.getTooltip(), "<" + CommonBundle.getErrorTitle() + ">");
   }
 
   @Override
-  public @Nullable DiagramNode<DiagramObject> addElement(DiagramObject element) {
+  public @Nullable DiagramNode<DiagramObject> addElement(@Nullable DiagramObject element) {
     return null;
   }
 

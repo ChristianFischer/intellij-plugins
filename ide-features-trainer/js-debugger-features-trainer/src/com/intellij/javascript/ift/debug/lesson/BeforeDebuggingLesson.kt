@@ -3,19 +3,19 @@ package com.intellij.javascript.ift.debug.lesson
 
 import com.intellij.execution.ExecutionBundle
 import com.intellij.execution.RunManager
+import com.intellij.execution.impl.RunConfigurable
 import com.intellij.javascript.ift.debug.JsDebugLessonsBundle
 import com.intellij.javascript.ift.debug.setLanguageLevel
 import com.intellij.openapi.editor.impl.EditorComponentImpl
 import com.intellij.ui.UIBundle
 import com.intellij.ui.treeStructure.Tree
-import training.learn.interfaces.Module
-import training.learn.lesson.kimpl.*
+import training.dsl.*
+import training.learn.course.KLesson
 import training.ui.LearningUiHighlightingManager
 import javax.swing.JButton
-import javax.swing.tree.DefaultMutableTreeNode
 
-class BeforeDebuggingLesson(module: Module)
-  : KLesson("Before Debugging: Run/Debug Configurations", JsDebugLessonsBundle.message("js.debugger.before.title"), module, "JavaScript") {
+class BeforeDebuggingLesson
+  : KLesson("Before Debugging: Run/Debug Configurations", JsDebugLessonsBundle.message("js.debugger.before.title")) {
 
   companion object {
     val jsDebuggerSample = parseLessonSample("""
@@ -48,7 +48,7 @@ class BeforeDebuggingLesson(module: Module)
           text(
             JsDebugLessonsBundle.message("js.debugger.before.describe.tool.window",
                                          action("RunClass"), strong(UIBundle.message("tool.window.name.run")), action(it)))
-          trigger(it)
+          checkToolWindowState("Run", false)
         }
 
         task {
@@ -68,7 +68,7 @@ class BeforeDebuggingLesson(module: Module)
           LearningUiHighlightingManager.clearHighlights()
           text(JsDebugLessonsBundle.message("js.debugger.before.edit", strong("debugging.js"), strong(ExecutionBundle.message("edit.configuration.action").dropMnemonic())))
           stateCheck {
-            ((focusOwner as? Tree)?.model?.root as? DefaultMutableTreeNode)?.lastChild.toString() == "Templates"
+            (focusOwner as? Tree)?.model?.javaClass?.name?.contains(RunConfigurable::class.java.simpleName) ?: false
           }
         }
 

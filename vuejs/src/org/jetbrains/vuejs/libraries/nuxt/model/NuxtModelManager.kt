@@ -14,7 +14,7 @@ import org.jetbrains.vuejs.libraries.nuxt.model.impl.NuxtApplicationImpl
 
 object NuxtModelManager {
 
-  fun getApplication(project:Project, context: VirtualFile): NuxtApplication? =
+  fun getApplication(project: Project, context: VirtualFile): NuxtApplication? =
     findParentEntry(context, getNuxtApplicationMap(project))
 
   fun getApplication(context: PsiElement): NuxtApplication? =
@@ -22,10 +22,18 @@ object NuxtModelManager {
       getApplication(context.project, it)
     }
 
+  fun getApplication(context: GlobalSearchScope): NuxtApplication? =
+    context.project
+      ?.let { getNuxtApplicationMap(it) }
+      ?.asSequence()
+      ?.filter { context.contains(it.key) }
+      ?.map { it.value }
+      ?.singleOrNull()
+
   private fun getNuxtApplicationMap(project: Project): Map<VirtualFile, NuxtApplication> =
     CachedValuesManager.getManager(project).getCachedValue(project) {
       create<Map<VirtualFile, NuxtApplication>>(
-        FilenameIndex.getVirtualFilesByName(project, NUXT_CONFIG_FILE, GlobalSearchScope.projectScope(project))
+        FilenameIndex.getVirtualFilesByName(NUXT_CONFIG_FILE, GlobalSearchScope.projectScope(project))
           .associateBy({ it.parent }, { NuxtApplicationImpl(it, project) }),
         VirtualFileManager.VFS_STRUCTURE_MODIFICATIONS)
     }

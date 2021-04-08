@@ -11,9 +11,9 @@ import com.jetbrains.swift.ift.lesson.refactorings.*
 import com.jetbrains.swift.ift.lesson.rundebugtest.SwiftDebugLesson
 import com.jetbrains.swift.ift.lesson.rundebugtest.SwiftRunLesson
 import com.jetbrains.swift.ift.lesson.rundebugtest.SwiftTestLesson
-import training.learn.LearningModule
 import training.learn.course.LearningCourseBase
-import training.learn.interfaces.LessonType
+import training.learn.course.LearningModule
+import training.learn.course.LessonType
 
 class SwiftLearningCourse : LearningCourseBase("Swift") {
   override fun modules() = listOf(
@@ -23,16 +23,16 @@ class SwiftLearningCourse : LearningCourseBase("Swift") {
                    primaryLanguage = langSupport,
                    moduleType = LessonType.PROJECT) {
       listOf(
-        SwiftCompletionLesson(it),
-        SwiftSelectionLesson(it),
-        SwiftCommentLesson(it),
-        SwiftDeleteLesson(it),
-        SwiftDuplicateLesson(it),
-        SwiftMoveLesson(it),
-        SwiftFoldingLesson(it),
-        SwiftMultipleSelectionsLesson(it),
-        SwiftCodeFormattingLesson(it),
-        SwiftQuickPopupsLesson(it),
+        SwiftCompletionLesson(),
+        SwiftSelectionLesson(),
+        SwiftCommentLesson(),
+        SwiftDeleteLesson(),
+        SwiftDuplicateLesson(),
+        SwiftMoveLesson(),
+        SwiftFoldingLesson(),
+        SwiftMultipleSelectionsLesson(),
+        SwiftCodeFormattingLesson(),
+        SwiftQuickPopupsLesson(),
       )
     },
     LearningModule(name = SwiftLessonsBundle.message("swift.code.generations.module.name"),
@@ -41,10 +41,10 @@ class SwiftLearningCourse : LearningCourseBase("Swift") {
                    primaryLanguage = langSupport,
                    moduleType = LessonType.PROJECT) {
       listOf(
-        SwiftGenerateLesson(it),
-        SwiftOverrideImplementLesson(it),
-        SwiftCreateFromUsageLesson(it),
-        SwiftQuickFixesAndIntentionsLesson(it),
+        SwiftGenerateLesson(),
+        SwiftOverrideImplementLesson(),
+        SwiftCreateFromUsageLesson(),
+        SwiftQuickFixesAndIntentionsLesson(),
       )
     },
     LearningModule(name = SwiftLessonsBundle.message("swift.navigation.module.name"),
@@ -53,11 +53,11 @@ class SwiftLearningCourse : LearningCourseBase("Swift") {
                    primaryLanguage = langSupport,
                    moduleType = LessonType.PROJECT) {
       listOf(
-        SwiftMainWindowsViewsLesson(it),
-        SwiftTODOsBookmarksLesson(it),
-        SwiftCodeNavigationLesson(it),
-        SwiftPreciseNavigationLesson(it),
-        SwiftSearchLesson(it),
+        SwiftMainWindowsViewsLesson(),
+        SwiftTODOsBookmarksLesson(),
+        SwiftCodeNavigationLesson(),
+        SwiftPreciseNavigationLesson(),
+        SwiftSearchLesson(),
       )
     },
     LearningModule(name = SwiftLessonsBundle.message("swift.refactorings.module.name"),
@@ -66,11 +66,11 @@ class SwiftLearningCourse : LearningCourseBase("Swift") {
                    primaryLanguage = langSupport,
                    moduleType = LessonType.PROJECT) {
       listOf(
-        SwiftRenameLesson(it),
-        SwiftExtractVariableLesson(it),
-        SwiftExtractMethodLesson(it),
-        SwiftExtractClosureLesson(it),
-        SwiftChangeSignatureLesson(it),
+        SwiftRenameLesson(),
+        SwiftExtractVariableLesson(),
+        SwiftExtractFunctionLesson(),
+        SwiftExtractClosureLesson(),
+        SwiftChangeSignatureLesson(),
       )
     },
     LearningModule(name = SwiftLessonsBundle.message("swift.run.debug.test.module.name"),
@@ -79,9 +79,9 @@ class SwiftLearningCourse : LearningCourseBase("Swift") {
                    primaryLanguage = langSupport,
                    moduleType = LessonType.PROJECT) {
       listOf(
-        SwiftRunLesson(it),
-        SwiftDebugLesson(it),
-        SwiftTestLesson(it),
+        SwiftRunLesson(),
+        SwiftDebugLesson(),
+        SwiftTestLesson(),
       )
     },
   )

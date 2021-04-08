@@ -1,13 +1,13 @@
 package com.jetbrains.swift.ift.lesson.refactorings
 
 import com.jetbrains.swift.ift.SwiftLessonsBundle
-import training.learn.interfaces.Module
-import training.learn.lesson.kimpl.KLesson
-import training.learn.lesson.kimpl.LessonContext
-import training.learn.lesson.kimpl.LessonSample
-import training.learn.lesson.kimpl.parseLessonSample
+import training.dsl.LessonContext
+import training.dsl.LessonSample
+import training.dsl.parseLessonSample
+import training.learn.course.KLesson
 
-class SwiftExtractClosureLesson(module: Module) : KLesson("swift.refactorings.extract.closure", SwiftLessonsBundle.message("swift.refactoring.extract.closure.name"), module, "Swift") {
+class SwiftExtractClosureLesson : KLesson("swift.refactorings.extract.closure",
+                                          SwiftLessonsBundle.message("swift.refactoring.extract.closure.name")) {
 
   private val sample: LessonSample = parseLessonSample("""
 import UIKit

@@ -17,7 +17,6 @@ package org.jetbrains.idea.perforce.perforce;
 
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.application.ReadAction;
-import com.intellij.openapi.components.ServiceManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.Key;
 import com.intellij.openapi.util.SystemInfo;
@@ -30,7 +29,6 @@ import com.intellij.openapi.vfs.VfsUtilCore;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.vfs.VirtualFileVisitor;
 import com.intellij.openapi.vfs.newvfs.NewVirtualFile;
-import com.intellij.util.SystemProperties;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NonNls;
 import org.jetbrains.annotations.NotNull;
@@ -195,7 +193,7 @@ public final class P4File {
   public FStat getFstat(final Project project, final boolean forceNew) throws VcsException {
     final ChangeListManager changeListManager = ChangeListManager.getInstance(project);
     final PerforceRunner perforceRunner = PerforceRunner.getInstance(project);
-    return getFstat(ServiceManager.getService(project, PerforceBaseInfoWorker.class), changeListManager, perforceRunner, forceNew);
+    return getFstat(project.getService(PerforceBaseInfoWorker.class), changeListManager, perforceRunner, forceNew);
   }
 
   public FStat getFstat(final PerforceBaseInfoWorker baseInfoWorker, final ChangeListManager changeListManager, final PerforceRunner perforceRunner,
@@ -228,7 +226,7 @@ public final class P4File {
           myLocalPath = myVFile.getPath();
         }
         else if (myParentDirOfDeleted != null) {
-          myLocalPath = myParentDirOfDeleted.getPath() + SystemProperties.getLineSeparator() + myName;
+          myLocalPath = myParentDirOfDeleted.getPath() + System.lineSeparator() + myName;
         }
         else {
           throw new RuntimeException(PerforceBundle.message("exception.text.cannot.figure.out.local.path"));

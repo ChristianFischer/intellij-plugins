@@ -2,13 +2,13 @@ package com.jetbrains.swift.ift.lesson.navigation
 
 import com.intellij.icons.AllIcons
 import com.jetbrains.swift.ift.SwiftLessonsBundle
-import training.learn.interfaces.Module
-import training.learn.lesson.kimpl.KLesson
-import training.learn.lesson.kimpl.LessonContext
-import training.learn.lesson.kimpl.LessonSample
-import training.learn.lesson.kimpl.parseLessonSample
+import training.dsl.LessonContext
+import training.dsl.LessonSample
+import training.dsl.parseLessonSample
+import training.learn.course.KLesson
 
-class SwiftMainWindowsViewsLesson(module: Module) : KLesson("swift.navigation.toolwindows", SwiftLessonsBundle.message("swift.navigation.windows.name"), module, "Swift") {
+class SwiftMainWindowsViewsLesson : KLesson("swift.navigation.toolwindows",
+                                            SwiftLessonsBundle.message("swift.navigation.windows.name")) {
 
   private val sample: LessonSample = parseLessonSample("""
 import UIKit
@@ -113,7 +113,7 @@ class Navigation: UITableViewController {
     text(SwiftLessonsBundle.message("swift.navigation.windows.files", code(".xcworkspace"), code(".xcproject")))
     task {
       triggers("com.intellij.ui.content.tabs.TabbedContentAction\$MyNextTabAction")
-      text(SwiftLessonsBundle.message("swift.navigation.windows.files.activate", action("NextTab")))
+      text(SwiftLessonsBundle.message("swift.navigation.windows.files.activate", shortcut("⇧⌘]")))
     }
     caret(1, 1)
     text(SwiftLessonsBundle.message("swift.navigation.windows.return.to.editor", action("EditorEscape")))

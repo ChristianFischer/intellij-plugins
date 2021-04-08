@@ -4,16 +4,21 @@ package org.angularjs.codeInsight.router;
 import com.intellij.diagram.DiagramProvider;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.application.ReadAction;
 import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.ui.popup.JBPopupFactory;
+import com.intellij.openapi.util.ModificationTracker;
 import com.intellij.openapi.util.Pair;
 import com.intellij.openapi.vfs.VirtualFile;
+import com.intellij.psi.util.CachedValueProvider;
+import com.intellij.psi.util.CachedValuesManager;
 import com.intellij.ui.components.JBList;
 import com.intellij.uml.core.actions.ShowDiagram;
 import com.intellij.util.ArrayUtil;
 import com.intellij.util.Consumer;
+import com.intellij.util.concurrency.AppExecutorUtil;
 import icons.AngularJSIcons;
 import org.angularjs.AngularJSBundle;
 import org.angularjs.index.AngularIndexUtil;
@@ -23,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 final class ShowUiRouterStatesNewDiagramAction extends ShowDiagram {
   @Override
@@ -53,7 +59,8 @@ final class ShowUiRouterStatesNewDiagramAction extends ShowDiagram {
                                             entry.getKey());
           graphBuilders.add(Pair.create(entry.getKey().getName(), graphBuilder));
         }
-      }), AngularJSBundle.message("angularjs.ui.router.diagram.action.new.diagram.progress", diagramProvider.getPresentableName()), false, project);
+      }), AngularJSBundle.message("angularjs.ui.router.diagram.action.new.diagram.progress", diagramProvider.getPresentableName()), false,
+      project);
 
     final AngularUiRouterProviderContext routerProviderContext = AngularUiRouterProviderContext.getInstance(project);
     routerProviderContext.reset();
@@ -62,7 +69,11 @@ final class ShowUiRouterStatesNewDiagramAction extends ShowDiagram {
       routerProviderContext.registerNodesBuilder(nodesBuilder);
       final DiagramObject element = nodesBuilder.getRootNode().getIdentifyingElement();
 
-      final Runnable callback = show(element, diagramProvider, project, null, Collections.emptyList());
+      //noinspection unchecked,rawtypes
+      logStatistics(project, (DiagramProvider)diagramProvider, element, Collections.emptyList());
+      //noinspection unchecked,rawtypes
+      final Runnable callback =
+        show(project, ((DiagramProvider)diagramProvider), element, Collections.emptyList(), getLocation(e.getDataContext(), e));
       if (callback != null) {
         callback.run();
       }
@@ -103,12 +114,28 @@ final class ShowUiRouterStatesNewDiagramAction extends ShowDiagram {
 
   @Override
   public void update(@NotNull AnActionEvent e) {
-    final Project project = e.getProject();
-    e.getPresentation().setEnabledAndVisible(project != null && AngularIndexUtil.hasAngularJS(project));
-
+    e.getPresentation().setEnabledAndVisible(isAngularJsContext(e));
     //noinspection DialogTitleCapitalization
     e.getPresentation().setText(AngularJSBundle.message("angularjs.ui.router.diagram.action.new.diagram.name"));
     e.getPresentation().setDescription(AngularJSBundle.message("angularjs.ui.router.diagram.action.new.diagram.description"));
     e.getPresentation().setIcon(AngularJSIcons.AngularJS);
+  }
+
+  private static boolean isAngularJsContext(@NotNull AnActionEvent e) {
+    final Project project = e.getProject();
+    if (project == null) return false;
+    try {
+      return CachedValuesManager.getManager(project)
+               .getCachedValue(project, () -> CachedValueProvider.Result.create(
+                 ReadAction.nonBlocking(() -> AngularIndexUtil.hasAngularJS(project))
+                   .inSmartMode(project)
+                   .submit(AppExecutorUtil.getAppExecutorService()),
+                 ModificationTracker.NEVER_CHANGED
+               ))
+               .get(5, TimeUnit.MILLISECONDS) == Boolean.TRUE;
+    }
+    catch (Exception exception) {
+      return false;
+    }
   }
 }

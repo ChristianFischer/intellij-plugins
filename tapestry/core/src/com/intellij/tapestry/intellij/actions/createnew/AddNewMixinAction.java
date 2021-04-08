@@ -37,19 +37,18 @@ public class AddNewMixinAction extends AddNewElementAction<MixinsNode> {
    */
   @Override
   public void actionPerformed(@NotNull AnActionEvent event) {
-    final Module module = getModule(event);
+    Module module = event.getData(LangDataKeys.MODULE);
     if (module == null) return;
 
     String defaultMixinPath = getDefaultElementPath(event, module);
     if (defaultMixinPath == null) return;
 
     final AddNewMixinDialog addNewMixinDialog =
-        new AddNewMixinDialog((Module)event.getDataContext().getData(LangDataKeys.MODULE.getName()), defaultMixinPath);
+        new AddNewMixinDialog(module, defaultMixinPath);
 
     final DialogBuilder builder = new DialogBuilder(module.getProject());
     builder.setCenterPanel(addNewMixinDialog.getContentPane());
     builder.setTitle("New Tapestry Mixin");
-    builder.setButtonsAlignment(SwingConstants.CENTER);
     builder.setPreferredFocusComponent(addNewMixinDialog.getNameComponent());
 
     builder.setOkOperation(() -> {

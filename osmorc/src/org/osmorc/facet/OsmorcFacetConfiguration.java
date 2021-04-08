@@ -26,11 +26,11 @@ package org.osmorc.facet;
 
 import aQute.bnd.header.OSGiHeader;
 import aQute.bnd.header.Parameters;
+import com.intellij.compiler.server.BuildManager;
 import com.intellij.facet.FacetConfiguration;
 import com.intellij.facet.ui.FacetEditorContext;
 import com.intellij.facet.ui.FacetEditorTab;
 import com.intellij.facet.ui.FacetValidatorsManager;
-import com.intellij.facet.ui.libraries.FrameworkLibraryValidator;
 import com.intellij.notification.NotificationType;
 import com.intellij.openapi.compiler.CompilerPaths;
 import com.intellij.openapi.components.PathMacroManager;
@@ -115,8 +115,6 @@ public final class OsmorcFacetConfiguration implements FacetConfiguration, Modif
 
   @Override
   public FacetEditorTab[] createEditorTabs(FacetEditorContext context, FacetValidatorsManager validatorsManager) {
-    FrameworkLibraryValidator validator = OsgiCoreLibraryType.getValidator(context, validatorsManager);
-    validatorsManager.registerValidator(validator);
     return new FacetEditorTab[]{
       new OsmorcFacetGeneralEditorTab(context, validatorsManager),
       new OsmorcFacetJAREditorTab(context, validatorsManager),
@@ -303,6 +301,10 @@ public final class OsmorcFacetConfiguration implements FacetConfiguration, Modif
 
   public boolean isUseBndFile() {
     return getManifestGenerationMode() == ManifestGenerationMode.Bnd;
+  }
+
+  public boolean isUseBndMavenPlugin() {
+    return getManifestGenerationMode() == ManifestGenerationMode.BndMavenPlugin;
   }
 
   /**

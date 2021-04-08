@@ -6,7 +6,6 @@ import com.intellij.lang.javascript.psi.JSTypeUtils
 import com.intellij.lang.javascript.psi.ecma6.TypeScriptField
 import com.intellij.lang.javascript.psi.ecma6.TypeScriptParameter
 import com.intellij.lang.javascript.psi.resolve.JSTypeEvaluator
-import com.intellij.lang.javascript.psi.types.JSAnyType
 import com.intellij.psi.PsiElement
 import org.jetbrains.vuejs.context.isVueContext
 import org.jetbrains.vuejs.libraries.vuex.VuexUtils.GETTERS
@@ -24,29 +23,32 @@ object VuexStoreTypeProvider {
   fun addTypeFromResolveResult(evaluator: JSTypeEvaluator, result: PsiElement): Boolean {
     if (result is TypeScriptField) {
       val typeConstructor = getTypeConstructor(result.name) ?: return false
-      if (result.containingFile.parent?.parent?.name != VUEX_PACKAGE) return false
-      if (!isVueContext(result)) return false
-      evaluator.addType(typeConstructor(result, VuexStaticNamespace.EMPTY), result)
+      if (!isStoreField(result) || !isVueContext(result)) return false
+      evaluator.addType(typeConstructor(result, VuexStaticNamespace.EMPTY))
       return true
     }
     else if (result is JSParameter) {
       if (result is TypeScriptParameter && result.jsType
-          .let { it != null && !JSTypeUtils.isAnyType(it)})
-            return false
+          .let { it != null && !JSTypeUtils.isAnyType(it) })
+        return false
       if (isActionContextParameter(result)) {
         if (!isVueContext(result)) return false
-        evaluator.addType(VuexActionContextType(result), result)
+        evaluator.addType(VuexActionContextType(result))
         return true
       }
       val name = result.name
       val typeConstructor = getTypeConstructor(name) ?: return false
       val namespace: VuexStoreNamespace = getNamespaceForGettersOrState(result, name!!) ?: return false
       if (!isVueContext(result)) return false
-      evaluator.addType(typeConstructor(result, namespace), result)
+      evaluator.addType(typeConstructor(result, namespace))
       return true
     }
     return false
   }
+
+  private fun isStoreField(result: TypeScriptField): Boolean =
+    result.namespace?.qualifiedName == "Store"
+    && result.containingFile.virtualFile?.parent?.parent?.name == VUEX_PACKAGE
 
   private fun getTypeConstructor(name: String?) = when (name) {
     STATE, ROOT_STATE -> ::VuexContainerStateType

@@ -15,7 +15,7 @@ class VuexTestStructure : BasePlatformTestCase() {
   fun testNuxtJs() {
     myFixture.configureStore(VuexTestStore.NuxtJs)
     myFixture.configureFromTempProjectFile("store/pages/index.vue")
-    doTestStructure()
+    doTestStructure(false)
   }
 
   fun testNuxtJs2() {
@@ -26,35 +26,48 @@ class VuexTestStructure : BasePlatformTestCase() {
 
   fun testStorefront() {
     myFixture.configureStore(VuexTestStore.Storefront)
-    myFixture.configureByText("foo.vue", "<script>export default{}</script>")
     doTestStructure()
   }
 
   fun testShoppingCart() {
     myFixture.configureStore(VuexTestStore.ShoppingCart)
-    myFixture.configureByText("foo.vue", "<script>export default{}</script>")
     doTestStructure()
   }
 
   fun testCounterHot() {
     myFixture.configureStore(VuexTestStore.CounterHot)
-    myFixture.configureByText("foo.vue", "<script>export default{}</script>")
     doTestStructure()
   }
 
   fun testSimpleStore() {
     myFixture.configureStore(VuexTestStore.SimpleStore)
-    myFixture.configureByText("foo.vue", "<script>export default{}</script>")
     doTestStructure()
   }
 
   fun testFunctionInit() {
     myFixture.configureStore(VuexTestStore.FunctionInit)
-    myFixture.configureByText("foo.vue", "<script>export default{}</script>")
     doTestStructure()
   }
 
-  private fun doTestStructure() {
+  fun testComics() {
+    myFixture.configureStore(VuexTestStore.Comics)
+    doTestStructure()
+  }
+
+  fun testCompositionCounter() {
+    myFixture.configureStore(VuexTestStore.CompositionCounter)
+    doTestStructure()
+  }
+
+  fun testCompositionShoppingCart() {
+    myFixture.configureStore(VuexTestStore.CompositionShoppingCart)
+    doTestStructure()
+  }
+
+  private fun doTestStructure(createFile: Boolean = true) {
+    if (createFile) {
+      myFixture.configureByText("foo.vue", "<script>export default{}</script>")
+    }
     val context = VuexModelManager.getVuexStoreContext(myFixture.file)!!
     myFixture.configureByText("check.txt", printContext(context))
     myFixture.checkResultByFile(getTestName(false) + ".txt")

@@ -14,6 +14,7 @@
  */
 package com.intellij.struts2.freemarker;
 
+import com.intellij.freemarker.FreemarkerIcons;
 import com.intellij.freemarker.psi.files.FtlFileType;
 import com.intellij.javaee.web.WebUtil;
 import com.intellij.javaee.web.facet.WebFacet;
@@ -23,7 +24,6 @@ import com.intellij.psi.PsiReference;
 import com.intellij.psi.impl.source.resolve.reference.impl.providers.FileReferenceSet;
 import com.intellij.struts2.dom.struts.impl.path.FileReferenceSetHelper;
 import com.intellij.struts2.dom.struts.impl.path.StrutsResultContributor;
-import icons.FreemarkerIcons;
 import org.jetbrains.annotations.NonNls;
 import org.jetbrains.annotations.NotNull;
 
@@ -36,7 +36,7 @@ import java.util.Objects;
  *
  * @author peter
  */
-public final class FreeMarkerStrutsResultContributor extends StrutsResultContributor {
+final class FreeMarkerStrutsResultContributor extends StrutsResultContributor {
   @NonNls
   public static final String FREEMARKER = "freemarker";
 
@@ -47,7 +47,7 @@ public final class FreeMarkerStrutsResultContributor extends StrutsResultContrib
 
   @Override
   public boolean createReferences(@NotNull final PsiElement psiElement,
-                                  @NotNull final List<PsiReference> references,
+                                  final @NotNull List<PsiReference> references,
                                   final boolean soft) {
     final String namespace = getNamespace(psiElement);
     if (namespace == null) {

@@ -7,7 +7,6 @@ import com.intellij.execution.testframework.TestRunnerBundle
 import com.intellij.execution.testframework.sm.SmRunnerBundle
 import com.intellij.icons.AllIcons
 import com.intellij.idea.ActionsBundle
-import com.intellij.javascript.ift.JavaScriptLangSupport
 import com.intellij.javascript.ift.JsLessonsBundle
 import com.intellij.javascript.ift.lesson.setLanguageLevel
 import com.intellij.openapi.application.ModalityState
@@ -20,20 +19,19 @@ import com.intellij.openapi.keymap.KeymapUtil
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.ui.UIBundle
 import com.intellij.ui.treeStructure.Tree
-import training.learn.interfaces.Module
+import training.dsl.*
+import training.dsl.LessonUtil.highlightBreakpointGutter
+import training.dsl.LessonUtil.productName
+import training.learn.course.KLesson
 import training.learn.js.textAtCaretEqualsTo
 import training.learn.js.textOnLine
-import training.learn.lesson.kimpl.*
-import training.learn.lesson.kimpl.LessonUtil.highlightBreakpointGutter
-import training.learn.lesson.kimpl.LessonUtil.productName
 import training.ui.LearningUiHighlightingManager
 import java.awt.event.KeyEvent
 import javax.swing.SwingConstants
 import javax.swing.tree.DefaultMutableTreeNode
 
-class JestLesson(module: Module)
-  : KLesson("Fundamentals of Testing in WebStorm", JsLessonsBundle.message("js.testing.jest.title", productName), module,
-            JavaScriptLangSupport.lang){
+class JestLesson
+  : KLesson("Fundamentals of Testing in WebStorm", JsLessonsBundle.message("js.testing.jest.title", productName)){
   override val lessonContent: LessonContext.() -> Unit
     get() {
       return {
@@ -119,7 +117,7 @@ class JestLesson(module: Module)
           }
         }
 
-        highlightBreakpointGutter(LogicalPosition(4, 0))
+        highlightBreakpointGutter { LogicalPosition(4, 0) }
         task {
           text(JsLessonsBundle.message("js.testing.jest.re.run.test.1", icon(AllIcons.RunConfigurations.TestState.Red2)))
           text(JsLessonsBundle.message("js.testing.jest.re.run.test.2", strong("Run adds 1 + 2 to equal 3")))
@@ -135,7 +133,7 @@ class JestLesson(module: Module)
           }
           text(JsLessonsBundle.message("js.testing.jest.success.run.coverage.1"))
           text(JsLessonsBundle.message("js.testing.jest.success.run.coverage.2", icon(AllIcons.General.RunWithCoverage)))
-          trigger(it)
+          checkToolWindowState("Coverage", true)
         }
 
         task("HideActiveWindow") {
@@ -143,7 +141,7 @@ class JestLesson(module: Module)
             LearningUiHighlightingManager.clearHighlights()
           }
           text(JsLessonsBundle.message("js.testing.jest.coverage.result", shortcut(KeymapUtil.getShortcutText("HideActiveWindow"))))
-          trigger(it)
+          checkToolWindowState("Coverage", false)
         }
 
         text(JsLessonsBundle.message("js.testing.jest.end",

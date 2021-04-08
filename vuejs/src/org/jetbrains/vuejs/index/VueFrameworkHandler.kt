@@ -10,6 +10,8 @@ import com.intellij.lang.javascript.index.JSSymbolUtil
 import com.intellij.lang.javascript.psi.*
 import com.intellij.lang.javascript.psi.ecma6.ES6Decorator
 import com.intellij.lang.javascript.psi.ecmal4.JSAttributeList
+import com.intellij.lang.javascript.psi.resolve.JSEvaluateContext
+import com.intellij.lang.javascript.psi.resolve.JSTypeEvaluator
 import com.intellij.lang.javascript.psi.stubs.JSElementIndexingData
 import com.intellij.lang.javascript.psi.stubs.JSImplicitElementStructure
 import com.intellij.lang.javascript.psi.stubs.impl.JSElementIndexingDataImpl
@@ -32,6 +34,7 @@ import com.intellij.psi.xml.XmlDocument
 import com.intellij.psi.xml.XmlFile
 import com.intellij.psi.xml.XmlTag
 import com.intellij.util.PathUtil
+import com.intellij.util.SmartList
 import com.intellij.util.castSafelyTo
 import com.intellij.xml.util.HtmlUtil.SCRIPT_TAG_NAME
 import org.jetbrains.vuejs.codeInsight.es6Unquote
@@ -40,7 +43,8 @@ import org.jetbrains.vuejs.codeInsight.toAsset
 import org.jetbrains.vuejs.lang.html.VueFileType
 import org.jetbrains.vuejs.model.source.*
 import org.jetbrains.vuejs.model.source.VueComponents.Companion.isComponentDecorator
-import org.jetbrains.vuejs.model.source.VueComponents.Companion.isDefineComponentCall
+import org.jetbrains.vuejs.model.source.VueComponents.Companion.isDefineComponentOrVueExtendCall
+import org.jetbrains.vuejs.types.VueCompositionPropsTypeProvider
 
 class VueFrameworkHandler : FrameworkIndexingHandler() {
   // 1 here we are just mapping the constants, no lifecycle needed
@@ -193,7 +197,7 @@ class VueFrameworkHandler : FrameworkIndexingHandler() {
       if (parent is JSExportAssignment
           || (parent is JSAssignmentExpression && isDefaultExports(parent.definitionExpression?.expression))
           || parent.castSafelyTo<JSArgumentList>()?.parent
-            ?.castSafelyTo<JSCallExpression>()?.let { isDefineComponentCall(it) } == true) {
+            ?.castSafelyTo<JSCallExpression>()?.let { isDefineComponentOrVueExtendCall(it) } == true) {
         if (isPossiblyVueContainerInitializer(obj)) {
           if (out == null) out = JSElementIndexingDataImpl()
           out.addImplicitElement(createImplicitElement(getComponentNameFromDescriptor(obj), property, VueComponentsIndex.JS_KEY))
@@ -335,6 +339,12 @@ class VueFrameworkHandler : FrameworkIndexingHandler() {
     return false
   }
 
+  override fun addTypeFromResolveResult(evaluator: JSTypeEvaluator, context: JSEvaluateContext, result: PsiElement): Boolean =
+    VueCompositionPropsTypeProvider.addTypeFromResolveResult(evaluator, context, result)
+
+  override fun useOnlyCompleteMatch(type: JSType, evaluateContext: JSEvaluateContext): Boolean =
+    VueCompositionPropsTypeProvider.useOnlyCompleteMatch(type, evaluateContext)
+
   override fun shouldCreateStubForLiteral(node: ASTNode?): Boolean {
     if (node?.psi is JSLiteralExpression) {
       return hasSignificantValue(node.psi as JSLiteralExpression)
@@ -417,6 +427,10 @@ fun findScriptTag(xmlFile: XmlFile): XmlTag? =
   findTopLevelVueTag(xmlFile, SCRIPT_TAG_NAME)
 
 @StubSafe
+fun findAttribute(tag: XmlTag, attributeName: String): XmlAttribute? =
+  PsiTreeUtil.getStubChildrenOfTypeAsList(tag, XmlAttribute::class.java).firstOrNull { it.name == attributeName }
+
+@StubSafe
 fun hasAttribute(tag: XmlTag, attributeName: String): Boolean =
   PsiTreeUtil.getStubChildrenOfTypeAsList(tag, XmlAttribute::class.java).any { it.name == attributeName }
 
@@ -445,6 +459,31 @@ fun findTopLevelVueTag(xmlFile: XmlFile, tagName: String): XmlTag? {
     return result
   }
   return null
+}
+
+fun findTopLevelVueTags(xmlFile: XmlFile, tagName: String): List<XmlTag> {
+  if (xmlFile.fileType == VueFileType.INSTANCE) {
+    if (xmlFile is PsiFileImpl) {
+      xmlFile.stub?.let { stub ->
+        return stub.childrenStubs
+          .asSequence()
+          .mapNotNull { (it as? XmlTagStub<*>)?.psi }
+          .filter { it.localName.equals(tagName, ignoreCase = true) }
+          .toList()
+      }
+    }
+    val result = SmartList<XmlTag>()
+    xmlFile.accept(object : VueFileVisitor() {
+      override fun visitXmlTag(tag: XmlTag?) {
+        if (tag != null
+            && tag.localName.equals(tagName, ignoreCase = true)) {
+          result.add(tag)
+        }
+      }
+    })
+    return result
+  }
+  return emptyList()
 }
 
 private enum class VueStaticMethod(val methodName: String) {

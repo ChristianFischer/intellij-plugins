@@ -48,9 +48,10 @@ abstract class VuexContainerImpl : VuexContainer {
 
 class VuexModuleImpl(override val name: String,
                      private val initializerElement: PsiElement,
-                     nameElement: PsiElement) : VuexContainerImpl(), VuexModule {
+                     nameElement: PsiElement,
+                     private val forceNamespaced: Boolean = false) : VuexContainerImpl(), VuexModule {
 
-  constructor(name: String, element: PsiElement) : this(name, element, element)
+  constructor(name: String, element: PsiElement, forceNamespaced: Boolean = false) : this(name, element, element, forceNamespaced)
 
   override val source = nameElement
 
@@ -60,7 +61,7 @@ class VuexModuleImpl(override val name: String,
   }
 
   override val isNamespaced: Boolean
-    get() = get(VuexContainerInfoProvider.VuexContainerInfo::isNamespaced)
+    get() = forceNamespaced || get(VuexContainerInfoProvider.VuexContainerInfo::isNamespaced)
 
   override val initializer: JSElement?
     get() {
@@ -75,7 +76,7 @@ class VuexModuleImpl(override val name: String,
     }
 }
 
-class VuexStoreImpl(override val source: JSNewExpression) : VuexContainerImpl(), VuexStore {
+class VuexStoreImpl(override val source: JSCallExpression) : VuexContainerImpl(), VuexStore {
   override val initializer: JSObjectLiteralExpression?
     get() {
       val storeCreationCall = this.source

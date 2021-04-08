@@ -3,22 +3,21 @@ package com.intellij.javascript.ift.lesson.editor
 
 import com.intellij.ide.IdeBundle
 import com.intellij.idea.ActionsBundle
-import com.intellij.javascript.ift.JavaScriptLangSupport
 import com.intellij.javascript.ift.JsLessonsBundle
 import com.intellij.javascript.ift.lesson.setLanguageLevel
 import com.intellij.openapi.editor.impl.EditorComponentImpl
 import com.intellij.openapi.wm.ToolWindowManager
 import com.intellij.ui.UIBundle
-import training.learn.interfaces.Module
+import training.dsl.LessonContext
+import training.dsl.checkToolWindowState
+import training.dsl.parseLessonSample
+import training.learn.course.KLesson
 import training.learn.js.checkWordInSearchEverywhereInput
 import training.learn.js.shiftSymbol
 import training.learn.js.textAtCaretEqualsTo
-import training.learn.lesson.kimpl.KLesson
-import training.learn.lesson.kimpl.LessonContext
-import training.learn.lesson.kimpl.parseLessonSample
 
-class NavigationLesson(module: Module)
-  : KLesson("Secrets of Efficient Navigation", JsLessonsBundle.message("js.editor.navigation.title"), module, JavaScriptLangSupport.lang) {
+class NavigationLesson
+  : KLesson("Secrets of Efficient Navigation", JsLessonsBundle.message("js.editor.navigation.title")) {
 
   private val thisOwnerName = "$" + "{this.ownerName}"
   private val thisName = "$" + "{this.name}"
@@ -83,7 +82,7 @@ class NavigationLesson(module: Module)
         }
         task("HideActiveWindow") {
           text(JsLessonsBundle.message("js.editor.navigation.hide.tool.window", action(it)))
-          trigger(it)
+          checkToolWindowState("Find", false)
         }
         task("SearchEverywhere") {
           text(JsLessonsBundle.message("js.editor.navigation.search.everywhere", shortcut(shiftSymbol())))

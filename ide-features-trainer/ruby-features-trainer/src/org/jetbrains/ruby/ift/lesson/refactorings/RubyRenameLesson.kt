@@ -1,23 +1,21 @@
 // Copyright 2000-2019 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package org.jetbrains.ruby.ift.lesson.refactorings
 
+import com.intellij.openapi.wm.ToolWindowId
+import com.intellij.openapi.wm.ToolWindowManager
 import com.intellij.refactoring.RefactoringBundle
-import com.intellij.testGuiFramework.impl.button
-import com.intellij.ui.treeStructure.Tree
+import com.intellij.refactoring.ui.NameSuggestionsField
 import org.jetbrains.ruby.ift.RubyLessonsBundle
-import training.commands.kotlin.TaskTestContext
+import training.dsl.LessonContext
+import training.dsl.LessonUtil.restoreIfModifiedOrMoved
+import training.dsl.dropMnemonic
+import training.dsl.parseLessonSample
 import training.learn.LessonsBundle
-import training.learn.interfaces.Module
-import training.learn.lesson.kimpl.KLesson
-import training.learn.lesson.kimpl.LessonContext
-import training.learn.lesson.kimpl.dropMnemonic
-import training.learn.lesson.kimpl.parseLessonSample
-import java.util.concurrent.Future
-import java.util.concurrent.TimeUnit
-import java.util.regex.Pattern
+import training.learn.course.KLesson
+import javax.swing.JButton
 
-class RubyRenameLesson(module: Module)
-  : KLesson("Rename", LessonsBundle.message("rename.lesson.name"), module, "ruby") {
+class RubyRenameLesson
+  : KLesson("Rename", LessonsBundle.message("rename.lesson.name")) {
 
   private val template = """
     class Championship
@@ -44,39 +42,45 @@ class RubyRenameLesson(module: Module)
 
   private val sample = parseLessonSample(template.replace("<name>", "teams"))
 
-  private val replacePreviewPattern = Pattern.compile(".*Instance variable to be renamed to (\\w+).*")
-
   override val lessonContent: LessonContext.() -> Unit
     get() = {
       prepareSample(sample)
-      lateinit var replace: Future<String>
+      var replace: String? = null
       task("RenameElement") {
         text(RubyLessonsBundle.message("ruby.rename.start.refactoring", action(it), code("teams"), code("teams_number")))
-        replace = stateRequired {
-          (focusOwner as? Tree)?.model?.root?.toString()?.let { root: String ->
-            replacePreviewPattern.matcher(root).takeIf { m -> m.find() }?.group(1)
+        triggerByUiComponentAndHighlight(false, false) { ui: NameSuggestionsField ->
+          ui.addDataChangedListener {
+            replace = ui.enteredName
           }
+          true
         }
+        stateCheck {
+          replace != null && ToolWindowManager.getInstance(project).getToolWindow(ToolWindowId.FIND)?.isVisible == true
+        }
+        restoreIfModifiedOrMoved()
         test {
           actions(it)
-          with(TaskTestContext.guiTestCase) {
-            dialog {
-              typeText("teams_number")
-              button("Refactor").click()
-            }
+          dialog {
+            type("teams_number")
+            button("Refactor").click()
           }
         }
       }
-      task(RefactoringBundle.message("usageView.doAction").dropMnemonic()) {
-        var result = ""
-        before {
-          result = template.replace("<name>", replace.get(2, TimeUnit.SECONDS)).replace("<caret>", "")
+
+      val confirmRefactoringButton = RefactoringBundle.message("usageView.doAction").dropMnemonic()
+      task {
+        triggerByUiComponentAndHighlight(highlightInside = false) { button: JButton ->
+          button.text?.contains(confirmRefactoringButton) == true
         }
-        text(RubyLessonsBundle.message("ruby.rename.confirm", strong(it)))
+      }
+
+      task {
+        val result = replace?.let { template.replace("<name>", it).replace("<caret>", "") }
+        text(RubyLessonsBundle.message("ruby.rename.confirm", strong(confirmRefactoringButton)))
         stateCheck { editor.document.text == result }
         test {
           ideFrame {
-            button(it).click()
+            button(confirmRefactoringButton).click()
           }
         }
       }

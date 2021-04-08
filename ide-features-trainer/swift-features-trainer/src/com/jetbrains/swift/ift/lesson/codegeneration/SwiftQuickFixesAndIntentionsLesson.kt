@@ -1,10 +1,14 @@
 package com.jetbrains.swift.ift.lesson.codegeneration
 
 import com.jetbrains.swift.ift.SwiftLessonsBundle
-import training.learn.interfaces.Module
-import training.learn.lesson.kimpl.*
+import training.dsl.LessonContext
+import training.dsl.LessonSample
+import training.dsl.LessonUtil
+import training.dsl.parseLessonSample
+import training.learn.course.KLesson
 
-class SwiftQuickFixesAndIntentionsLesson(module: Module) : KLesson("swift.codegeneration.quickfixes", SwiftLessonsBundle.message("swift.codegeneration.quickfix.name"), module, "Swift") {
+class SwiftQuickFixesAndIntentionsLesson : KLesson("swift.codegeneration.quickfixes",
+                                                   SwiftLessonsBundle.message("swift.codegeneration.quickfix.name")) {
 
   private val sample: LessonSample = parseLessonSample("""
 import Foundation
@@ -96,6 +100,7 @@ class QuickFixes: NSObject {
       triggers("com.intellij.codeInsight.daemon.impl.DaemonTooltipWithActionRenderer\$addActionsRow$1")
       text(SwiftLessonsBundle.message("swift.codegeneration.quickfix.redundant", code("@objc")))
     }
+    caret(43, 18)
     task {
       triggers("ShowIntentionActions")
       text(SwiftLessonsBundle.message("swift.codegeneration.quickfix.explicit.type", action("ShowIntentionActions"), code("fileManager")))

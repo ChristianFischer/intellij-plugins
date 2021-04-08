@@ -5,8 +5,6 @@ import com.intellij.lang.javascript.ecmascript6.TypeScriptTypeEvaluator
 import com.intellij.lang.javascript.psi.*
 import com.intellij.lang.javascript.psi.resolve.JSEvaluateContext
 import com.intellij.lang.javascript.psi.resolve.JSResolveUtil
-import com.intellij.lang.javascript.psi.resolve.JSTypeGuardEvaluator
-import com.intellij.lang.javascript.psi.resolve.JSTypeProcessor
 import com.intellij.lang.javascript.psi.types.*
 import com.intellij.lang.javascript.psi.types.primitives.JSNumberType
 import com.intellij.lang.javascript.psi.types.primitives.JSPrimitiveType
@@ -18,8 +16,8 @@ import org.jetbrains.vuejs.lang.expr.VueJSLanguage
 import org.jetbrains.vuejs.lang.expr.psi.VueJSVForExpression
 import org.jetbrains.vuejs.lang.expr.psi.VueJSVForVariable
 
-class VueJSTypeEvaluator(context: JSEvaluateContext, processor: JSTypeProcessor)
-  : TypeScriptTypeEvaluator(context, processor) {
+class VueJSTypeEvaluator(context: JSEvaluateContext)
+  : TypeScriptTypeEvaluator(context) {
 
   override fun addTypeFromVariableResolveResult(jsVariable: JSFieldVariable) {
     if (evaluateTypeFromVForVariable(jsVariable)) return
@@ -46,11 +44,11 @@ class VueJSTypeEvaluator(context: JSEvaluateContext, processor: JSTypeProcessor)
             val type = JSTypeUtils.getIterableComponentType(collectionType)
             when {
               type != null -> type
-              useTypeScriptKeyofType(collectionType) ->
-                JSCompositeTypeFactory.createIndexedAccessType(collectionType,
-                                                               JSCompositeTypeFactory.createKeyOfType(
-                                                                 collectionType, collectionType.source),
-                                                               collectionType.source)
+              useTypeScriptKeyofType(collectionType) -> {
+                val keyOfType = JSCompositeTypeFactory.createKeyOfType(collectionType, collectionType.source)
+                val indexedAccessType = JSCompositeTypeFactory.createIndexedAccessType(collectionType, keyOfType, collectionType.source)
+                JSWidenType.createWidening(indexedAccessType, null)
+              }
               else -> getVForVarType(
                 collectionExpr, *getComponentTypeFromArrayExpression(expression, collectionExpr).toTypedArray())
             }
@@ -59,7 +57,7 @@ class VueJSTypeEvaluator(context: JSEvaluateContext, processor: JSTypeProcessor)
         }
         if (type != null) {
           val typeToAdd = destructuringParents.applyToOuterType(type)
-          addType(typeToAdd, null)
+          addType(typeToAdd)
         }
       }
       1 -> {
@@ -90,10 +88,10 @@ class VueJSTypeEvaluator(context: JSEvaluateContext, processor: JSTypeProcessor)
             }
           }
         }
-        addType(type, null)
+        addType(type)
       }
       2 -> {
-        addType(getVForVarType(collectionExpr, ::JSNumberType), null)
+        addType(getVForVarType(collectionExpr, ::JSNumberType))
       }
     }
     return true

@@ -25,8 +25,8 @@ import com.intellij.testFramework.TestLoggerFactory;
 import com.intellij.testFramework.fixtures.IdeaTestFixtureFactory;
 import com.intellij.testFramework.fixtures.TempDirTestFixture;
 import com.intellij.testFramework.vcs.AbstractJunitVcsTestCase;
+import com.intellij.util.ArrayUtil;
 import com.intellij.util.ArrayUtilRt;
-import com.intellij.util.SystemProperties;
 import com.intellij.util.TimeoutUtil;
 import com.intellij.util.containers.ContainerUtil;
 import com.intellij.vcsUtil.VcsUtil;
@@ -229,8 +229,19 @@ public abstract class PerforceTestCase extends AbstractJunitVcsTestCase {
     return buildTestClientSpec("test", myClientRoot.toString(), "//test/...");
   }
 
-  protected void addFile(final String subPath) {
-    verify(runP4WithClient("add", new File(myClientRoot, subPath).toString()));
+  protected void addFile(@NotNull String subPath) {
+    addFile(subPath, false);
+  }
+
+  protected void addFile(@NotNull String subPath, boolean withoutIgnoreChecking) {
+    List<String> argList = new ArrayList<>();
+    argList.add("add");
+    if (withoutIgnoreChecking) {
+      argList.add("-I");
+    }
+    argList.add(new File(myClientRoot, subPath).toString());
+
+    verify(runP4WithClient(ArrayUtil.toStringArray(argList)));
 
     // IDE might've cached unversioned status for this file
     // We can't detect external 'p4 add' so let's pretend the user pressed 'Force Refresh'
@@ -331,8 +342,8 @@ public abstract class PerforceTestCase extends AbstractJunitVcsTestCase {
   }
 
   protected static String createP4Config(String client) {
-    return "P4CLIENT=" + client + SystemProperties.getLineSeparator() +
-           "P4PORT=localhost:" + ourP4port + SystemProperties.getLineSeparator();
+    return "P4CLIENT=" + client + System.lineSeparator() +
+           "P4PORT=localhost:" + ourP4port + System.lineSeparator();
   }
 
   protected void openForEdit(final VirtualFile fileToEdit) {
@@ -393,7 +404,7 @@ public abstract class PerforceTestCase extends AbstractJunitVcsTestCase {
   }
 
   protected void ignoreTestP4ConfigFiles() {
-    ignoreFiles(SystemProperties.getLineSeparator() + TEST_P4CONFIG);
+    ignoreFiles(System.lineSeparator() + TEST_P4CONFIG);
   }
 
   protected void ignoreFiles(@NotNull String fileEntries) {
@@ -495,15 +506,15 @@ public abstract class PerforceTestCase extends AbstractJunitVcsTestCase {
 
   @After
   public void after() throws Exception {
-    new RunAll()
-      .append(() -> {
+    RunAll.runAll(
+      () -> {
         if (myProject != null) {
           getChangeListManager().waitUntilRefreshed();
         }
-      })
-      .append(() -> Disposer.dispose(myTestRootDisposable))
-      .append(() -> disposeFixtures())
-      .append(() -> {
+      },
+      () -> Disposer.dispose(myTestRootDisposable),
+      () -> disposeFixtures(),
+      () -> {
         long start = System.currentTimeMillis();
         while (myP4dProcess != null && myP4dProcess.isAlive() && System.currentTimeMillis() - start < 10_000) {
           TimeoutUtil.sleep(50); // maybe it's finishing?
@@ -511,8 +522,8 @@ public abstract class PerforceTestCase extends AbstractJunitVcsTestCase {
         if (myP4dProcess != null && myP4dProcess.isAlive()) {
           throw new AssertionError("Perforce server still alive!");
         }
-      })
-      .run();
+      }
+    );
   }
 
   private void disposeFixtures() throws Exception {
@@ -564,12 +575,12 @@ public abstract class PerforceTestCase extends AbstractJunitVcsTestCase {
   }
 
   protected static String buildTestClientSpec(String clientName, String root, String depotMapping) {
-    return buildTestClientSpecCore(clientName, root) + "\t//depot/... " + depotMapping + SystemProperties.getLineSeparator();
+    return buildTestClientSpecCore(clientName, root) + "\t//depot/... " + depotMapping + System.lineSeparator();
   }
 
   @NotNull
   protected static String buildTestClientSpecCore(String clientName, String root) {
-    String sep = SystemProperties.getLineSeparator();
+    String sep = System.lineSeparator();
     return "Client:\t" + clientName + sep +
                "Root:\t" + root + sep +
                "View:" + sep;
@@ -697,7 +708,7 @@ public abstract class PerforceTestCase extends AbstractJunitVcsTestCase {
 
   @NotNull
   protected Change getSingleChange() {
-    return assertOneElement(ChangeListManagerImpl.getInstanceImpl(myProject).getDefaultChangeList().getChanges());
+    return assertOneElement(getChangeListManager().getDefaultChangeList().getChanges());
   }
 
   protected void editExternally(VirtualFile file, String text) {

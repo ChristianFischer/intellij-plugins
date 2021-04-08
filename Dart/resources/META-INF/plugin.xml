@@ -1,7 +1,8 @@
 <idea-plugin>
   <name>Dart</name>
+  <id>Dart</id>
   <description><![CDATA[
-<p>Support for <a href="https://www.dartlang.org/">Dart</a></p>
+<p>Support for <a href="https://dart.dev/">Dart</a></p>
 <p>Features</p>
 <ul>
 <li>Smart coding assistance for Dart that includes code completion, formatting, navigation, intentions, refactorings, and more</li>
@@ -59,7 +60,8 @@
 
     <html.scriptContentProvider language="Dart" implementationClass="com.jetbrains.lang.dart.DartScriptContentProvider"/>
     <nonProjectFileWritingAccessExtension implementation="com.jetbrains.lang.dart.ide.DartWritingAccessProvider"/>
-    <spellchecker.support language="Dart" implementationClass="com.jetbrains.lang.dart.DartSpellcheckingStrategy"/>
+    <spellchecker.support language="Dart" implementationClass="com.jetbrains.lang.dart.ide.spelling.DartSpellcheckingStrategy"/>
+    <spellchecker.bundledDictionaryProvider implementation="com.jetbrains.lang.dart.ide.spelling.DartBundledDictionaryProvider"/>
     <lang.documentationProvider language="Dart" implementationClass="com.jetbrains.lang.dart.ide.documentation.DartDocumentationProvider"/>
     <lang.implementationTextSelectioner language="Dart"
                                         implementationClass="com.jetbrains.lang.dart.ide.DartImplementationTextSelectioner"/>
@@ -235,8 +237,7 @@
     <applicationService serviceImplementation="com.jetbrains.lang.dart.ide.codeInsight.DartCodeInsightSettings"/>
     <codeCompletionConfigurable instance="com.jetbrains.lang.dart.ide.editor.DartSmartKeysConfigurable"/>
 
-    <backgroundPostStartupActivity implementation="com.jetbrains.lang.dart.DartBackgroundStartupActivity"/>
-    <postStartupActivity implementation="com.jetbrains.lang.dart.DartStartupActivity"/>
+    <backgroundPostStartupActivity implementation="com.jetbrains.lang.dart.DartStartupActivity"/>
     <vfs.asyncListener implementation="com.jetbrains.lang.dart.DartFileListener"/>
 
     <editorAppearanceConfigurable instance="com.jetbrains.lang.dart.analyzer.DartEditorAppearanceConfigurable"/>

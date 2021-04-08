@@ -1,10 +1,13 @@
 package com.jetbrains.swift.ift.lesson.refactorings
 
 import com.jetbrains.swift.ift.SwiftLessonsBundle
-import training.learn.interfaces.Module
-import training.learn.lesson.kimpl.*
+import training.dsl.LessonContext
+import training.dsl.LessonSample
+import training.dsl.LessonUtil
+import training.dsl.parseLessonSample
+import training.learn.course.KLesson
 
-class SwiftRenameLesson(module: Module) : KLesson("swift.refactorings.rename", SwiftLessonsBundle.message("swift.refactoring.rename.name"), module, "Swift") {
+class SwiftRenameLesson : KLesson("swift.refactorings.rename", SwiftLessonsBundle.message("swift.refactoring.rename.name")) {
 
   private val sample: LessonSample = parseLessonSample("""
 import UIKit

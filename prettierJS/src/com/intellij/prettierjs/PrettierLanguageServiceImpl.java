@@ -1,9 +1,8 @@
-// Copyright 2000-2020 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
+// Copyright 2000-2021 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package com.intellij.prettierjs;
 
 import com.google.gson.JsonObject;
 import com.intellij.javascript.nodejs.interpreter.NodeCommandLineConfigurator;
-import com.intellij.javascript.nodejs.interpreter.NodeJsInterpreter;
 import com.intellij.javascript.nodejs.library.yarn.YarnPnpNodePackage;
 import com.intellij.javascript.nodejs.util.NodePackage;
 import com.intellij.lang.javascript.service.*;
@@ -36,7 +35,7 @@ public class PrettierLanguageServiceImpl extends JSLanguageServiceBase implement
     super(project);
     project.getMessageBus().connect(this).subscribe(VirtualFileManager.VFS_CHANGES, new BulkFileListener() {
       @Override
-      public void after(@NotNull List<? extends VFileEvent> events) {
+      public void after(@NotNull List<? extends @NotNull VFileEvent> events) {
         for (VFileEvent event : events) {
           if (!(event instanceof VFileContentChangeEvent) || PrettierUtil.isConfigFileOrPackageJson(event.getFile())) {
             myFlushConfigCache = true;
@@ -125,15 +124,6 @@ public class PrettierLanguageServiceImpl extends JSLanguageServiceBase implement
     @Override
     public void dispose() {
 
-    }
-
-    @Nullable
-    @Override
-    protected NodeJsInterpreter getInterpreter() {
-      return JSLanguageServiceUtil.getInterpreterIfValid(
-        PrettierConfiguration.getInstance(myProject)
-          .getInterpreterRef()
-          .resolve(myProject));
     }
 
     @NotNull

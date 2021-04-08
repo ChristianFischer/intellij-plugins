@@ -52,7 +52,7 @@ public final class PerforceVFSListener extends VcsVFSListener {
     super.installListeners();
     myProject.getMessageBus().connect(myProject).subscribe(VirtualFileManager.VFS_CHANGES, new BulkFileListener() {
       @Override
-      public void after(@NotNull List<? extends VFileEvent> events) {
+      public void after(@NotNull List<? extends @NotNull VFileEvent> events) {
         for (VFileEvent event : events) {
           if (event instanceof VFileCreateEvent) {
             if (!(event.getFileSystem() instanceof LocalFileSystem)) continue;
@@ -101,7 +101,7 @@ public final class PerforceVFSListener extends VcsVFSListener {
     }
 
     ProgressManager.getInstance().run(new Task.Backgroundable(myProject,
-                                                              PerforceBundle.getString("progress.title.checking.for.ignored.files"),
+                                                              PerforceBundle.message("progress.title.checking.for.ignored.files"),
                                                               false) {
       @Override
       public void run(@NotNull ProgressIndicator pi) {
@@ -147,8 +147,9 @@ public final class PerforceVFSListener extends VcsVFSListener {
 
   @NotNull
   @Override
+  @SuppressWarnings("UnresolvedPropertyKey")
   protected String getSingleFileAddPromptTemplate() {
-    return PerforceBundle.getString("confirmation.text.add.files");
+    return PerforceBundle.message("confirmation.text.add.files");
   }
 
   @NotNull
@@ -175,8 +176,9 @@ public final class PerforceVFSListener extends VcsVFSListener {
   }
 
   @Override
+  @SuppressWarnings("UnresolvedPropertyKey")
   protected String getSingleFileDeletePromptTemplate() {
-    return PerforceBundle.getString("confirmation.text.remove.files");
+    return PerforceBundle.message("confirmation.text.remove.files");
   }
 
   @Override

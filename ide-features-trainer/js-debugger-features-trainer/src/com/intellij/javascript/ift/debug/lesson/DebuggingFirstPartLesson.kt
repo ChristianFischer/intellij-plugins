@@ -11,15 +11,14 @@ import com.intellij.openapi.editor.LogicalPosition
 import com.intellij.ui.UIBundle
 import com.intellij.ui.tabs.impl.SingleHeightTabs
 import com.intellij.xdebugger.XDebuggerBundle
-import training.learn.interfaces.Module
-import training.learn.lesson.kimpl.KLesson
-import training.learn.lesson.kimpl.LessonContext
-import training.learn.lesson.kimpl.LessonUtil
-import training.learn.lesson.kimpl.LessonUtil.highlightBreakpointGutter
-import training.learn.lesson.kimpl.highlightButtonById
+import training.dsl.LessonContext
+import training.dsl.LessonUtil
+import training.dsl.LessonUtil.highlightBreakpointGutter
+import training.dsl.highlightButtonById
+import training.learn.course.KLesson
 
-class DebuggingFirstPartLesson(module: Module)
-  : KLesson("Debugging Code. Part I", JsDebugLessonsBundle.message("js.debugger.part.1.title"), module, "JavaScript") {
+class DebuggingFirstPartLesson
+  : KLesson("Debugging Code. Part I", JsDebugLessonsBundle.message("js.debugger.part.1.title")) {
 
   override val lessonContent: LessonContext.() -> Unit
     get() {
@@ -34,7 +33,7 @@ class DebuggingFirstPartLesson(module: Module)
           trigger(it)
         }
 
-        highlightBreakpointGutter(LogicalPosition(0, 0))
+        highlightBreakpointGutter { LogicalPosition(0, 0) }
         task {
           text(JsDebugLessonsBundle.message("js.debugger.part.1.gutter", code("10"), code("-20"), code("Different!"), code("Equal!")))
           stateCheck {

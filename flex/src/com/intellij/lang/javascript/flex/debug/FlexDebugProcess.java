@@ -137,7 +137,7 @@ public class FlexDebugProcess extends XDebugProcess {
 
   private String myFdbLaunchCommand;
 
-  private final LinkedList<DebuggerCommand> commandsToWrite = new LinkedList<DebuggerCommand>() {
+  private final LinkedList<DebuggerCommand> commandsToWrite = new LinkedList<>() {
     @Override
     public synchronized DebuggerCommand removeFirst() {
       waitForData();
@@ -884,7 +884,7 @@ public class FlexDebugProcess extends XDebugProcess {
   }
 
   private static Collection<VirtualFile> getFilesByName(final Project project, final GlobalSearchScope scope, final String fileName) {
-    return ReadAction.compute(() -> FilenameIndex.getVirtualFilesByName(project, fileName, scope));
+    return ReadAction.compute(() -> FilenameIndex.getVirtualFilesByName(fileName, scope));
   }
 
   @Nullable
@@ -1298,7 +1298,7 @@ public class FlexDebugProcess extends XDebugProcess {
 
   @Override
   public XValueMarkerProvider<FlexValue, String> createValueMarkerProvider() {
-    return new XValueMarkerProvider<FlexValue, String>(FlexValue.class) {
+    return new XValueMarkerProvider<>(FlexValue.class) {
       @Override
       public boolean canMark(@NotNull final FlexValue value) {
         return getObjectId(value) != null;

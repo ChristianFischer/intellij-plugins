@@ -1,13 +1,13 @@
 package com.jetbrains.swift.ift.lesson.editor
 
 import com.jetbrains.swift.ift.SwiftLessonsBundle
-import training.learn.interfaces.Module
-import training.learn.lesson.kimpl.KLesson
-import training.learn.lesson.kimpl.LessonContext
-import training.learn.lesson.kimpl.LessonSample
-import training.learn.lesson.kimpl.parseLessonSample
+import training.dsl.LessonContext
+import training.dsl.LessonSample
+import training.dsl.parseLessonSample
+import training.learn.course.KLesson
 
-class SwiftQuickPopupsLesson(module: Module) : KLesson("swift.codeassistance.quickpopups", SwiftLessonsBundle.message("swift.editor.popups.name"), module, "Swift") {
+class SwiftQuickPopupsLesson : KLesson("swift.codeassistance.quickpopups",
+                                       SwiftLessonsBundle.message("swift.editor.popups.name")) {
 
   private val sample: LessonSample = parseLessonSample("""
 import Foundation
